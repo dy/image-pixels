@@ -1,0 +1,54 @@
+{
+  "name": "get-pixel-data",
+  "version": "1.0.0",
+  "description": "Read pixels from any image source",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "browser": "./browser.js",
+  "dependencies": {
+    "is-base64": "0.0.6",
+    "is-plain-obj": "^1.1.0",
+    "is-promise": "^2.1.0",
+    "string-to-arraybuffer": "^1.0.1"
+  },
+  "devDependencies": {
+    "arraybuffer-to-string": "^1.0.2",
+    "pixelmatch": "^4.0.2",
+    "tape": "^4.9.1"
+  },
+  "scripts": {
+    "test": "tape test",
+    "test-browser": "budo test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dy/get-pixel-data.git"
+  },
+  "keywords": [
+    "pixel",
+    "get",
+    "read",
+    "pixel",
+    "image",
+    "png",
+    "jpeg",
+    "jpg",
+    "jpe",
+    "gif",
+    "decode",
+    "buffer",
+    "data",
+    "parse",
+    "dom",
+    "get-pixels",
+    "node",
+    "ndarray",
+    "get-pixel-data",
+    "get-image-pixels"
+  ],
+  "author": "Dmitry Yv",
+  "license": "MIT",
+  "readmeFilename": "readme.md"
+}
