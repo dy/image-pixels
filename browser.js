@@ -13,26 +13,28 @@ var isObj = require('is-plain-obj')
 var isBase64 = require('is-base64')
 var fileType = require('file-type')
 var toab = require('string-to-arraybuffer')
+var rect = require('parse-rect')
+var extend = require('object-assign')
 
 
 module.exports = load
+module.exports.all = require('./lib/all')
 
 
-function load(src, o, cb) {
+function load(src, o) {
   // handle arguments
-  if ((typeof o === 'function' || !o) && isObj(src)) {
-    cb = o
-    o = src
+  if (isObj(src)) {
+    o = extend(src, o)
   }
   if (typeof o === 'string') o = {type: o}
-  if (!o) o = {}
+  else if (!o) o = {}
+  else if (Array.isArray(o)) o = {shape: o}
 
   // detect clipping
-  var clip = o.clip || {}
-  clip.x = o.x || o.left || 0
-  clip.y = o.y || o.top || 0
-  clip.w = o.w || o.width || src.width
-  clip.h = o.h || o.height || src.height
+  var width = o.shape && o.shape[0] || o.w || o.width
+  var height = o.shape && o.shape[1] || o.h || o.height
+  var clip = o.clip && rect(o.clip) || {x:0, y: 0}
+  var type = o.type || o.mime
 
   // handle source type
   var result
@@ -40,16 +42,19 @@ function load(src, o, cb) {
     // convert base64 to datauri
     if (isBase64(src) && !/^data\:/i.test(src)) {
       var buf = new Uint8Array(toab(src))
-      var type = fileType(buf)
+
+      // detect type if not passed in options
+      if (!type) {
+        type = fileType(buf)
+        type = type && type.mime
+      }
 
       // raw pixel data
       if (!type) {
-        if (!clip.w || !clip.h) throw new Error('Raw data requires width and height options')
-        buf.width = clip.w
-        buf.height = clip.h
-        result = getImageData(buf)
-        result.width = buf.width
-        result.height = buf.height
+        if (!width || !height) throw new Error('Raw data requires options.width and options.height')
+        buf.width = width
+        buf.height = height
+        result = getImageData({data: buf})
       }
       else {
         src = ['data:' + type.mime, 'base64,' + src].join(';')
@@ -62,9 +67,6 @@ function load(src, o, cb) {
 
   // make sure result is promise
   if (!isPromise(result)) result = Promise.resolve(result)
-  if (cb) return result.then(function (result) {
-    cb(null, result)
-  })
 
   return result
 
@@ -107,12 +109,9 @@ function load(src, o, cb) {
       var img = new Image()
       img.crossOrigin = 'Anonymous'
       img.onload = function() {
-        var idata = getImageData(img)
-        var pixels = new Uint8Array(idata.data)
-        pixels.width = clip.w || idata.width
-        pixels.height = clip.h || idata.height
-
-        ok(pixels)
+        if (!width) width = img.width
+        if (!height) height = img.height
+        ok(getImageData(img))
       }
       img.onerror = function(err) {
         nok(err)
@@ -143,7 +142,7 @@ function load(src, o, cb) {
       context.drawImage(img, 0, 0)
     }
 
-    return context.getImageData(clip.x, clip.y, clip.w || img.width, clip.h || img.height)
+    return context.getImageData(clip.x, clip.y, clip.width || width, clip.height || height)
   }
 
   // convert arraybuffer to pixels

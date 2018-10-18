@@ -1,6 +1,6 @@
 # get-pixel-data [![Build Status](https://travis-ci.org/dy/get-pixel-data.svg?branch=master)](https://travis-ci.org/dy/get-pixel-data) [![unstable](https://img.shields.io/badge/stability-unstable-green.svg)](http://github.com/badges/stability-badges) [![Greenkeeper badge](https://badges.greenkeeper.io/dy/get-pixel-data.svg)](https://greenkeeper.io/)
 
-Get pixel data for given URL, path, buffer, canvas or any other image source.
+Get pixel data for a given URL, path, buffer, canvas, image or any other source.
 
 
 ## Usage
@@ -8,33 +8,30 @@ Get pixel data for given URL, path, buffer, canvas or any other image source.
 [![$ npm install get-pixel-data](http://nodei.co/npm/get-pixel-data.png?mini=true)](http://npmjs.org/package/get-pixel-data)
 
 ```javascript
-var pxData = require('get-pixel-data')
+var pixelData = require('get-pixel-data')
 
-// callback style
-pxData('lena.png', function(err, pixels) {
-  if(err) {
-    console.log("Bad image path")
-    return
-  }
-  console.log("got pixels", pixels)
-})
-
-// async style
-var pixels = await pxData('lena.png')
-
-// pixels data properties
-var [width, height] = pixels
+// load single source
+var {data, width, height} = await pixelData('lena.png')
 
 // load multiple sources in parallel
-var [a, b, c] = await pxData.all(['./a.jpg', './b.png', canvas])
+var [a, b, c] = await pixelData.all([
+	'./a.jpg',
+	{ source: './b.png', cache: false },
+	canvas
+])
 
-// load dict of sources
-var {a, b, c} = await pxData.all({a: './a.jpg', b: './b.png', c: canvas})
+// load font atlas sprite dict
+var atlas = require('font-atlas')(chars: 'abc', step: [10, 10], shape: [20, 20])
+var dict = await pixelData({
+	a: {source: atlas, clip: [0,0,10,10]},
+	b: {source: atlas, clip: [10,0,10,10]},
+	c: {source: atlas, clip: [0,10,10,10]}
+)
 ```
 
-### `pxData(source|list|dict, options?, cb(err, pixels)?).then(pixels => {})`
+### `{data, width, height} = await pixelData(source, options?)`
 
-Loads and reads pixels into `Uint8Array` from `source`:
+Loads pixel data from `source`:
 
 * `path`, `url`
 * `data-uri`, `base64` strings
@@ -50,30 +47,28 @@ Loads and reads pixels into `Uint8Array` from `source`:
 * `Float32Array`, `Float64Array`, `Array`, `Array` of arrays
 * `ndarray`
 * regl, gl- components and other
-* null for empty pixels
-
-`options` can specify:
+* options object
 
 Option | Meaning
 ---|---
-`x` | Clipping left coordinate.
-`y` | Clipping top coordinate.
-`width` | Clipping width.
-`height` | Clipping height.
-`frame` | A frame # to read for animated image formats.
-`cache` | Save data for later faster fetch
+`source` | Source data, one from the list above.
+`shape` | Input data shape `[width, height]`, required for raw data.
+`type` | Mime type, optional for raw data.
+`cache` | Save URL for faster later fetching.
+`clip` | Clipping rectangle, `[left, top, right, bottom]` or `{x?, y?, width?, height?}`.
+<!-- `frame` | A frame # to read for animated image formats. -->
+<!-- `worker` | Delegate computation to worker, if available. Does not block main thread. -->
 
-Returning `pixels` have additional properties:
+### `list|dict = await pixelData.all(list|dict)`
 
-Property | Meaning
----|---
-`pixels.width` | Width of data, in pixels.
-`pixels.height` | Height of data, in pixels.
+Load multiple sources or dict of sources in parallel.
+
 
 ## Related
 
-* [get-pixels](https://ghub.io/get-pixels) − get ndarray with pixel data
-* [get-get-pixel-data](https://ghub.io/get-get-pixel-data) − get pixel data for Canvas/Image/Video
+* [get-pixels](https://ghub.io/get-pixels) − get ndarray with pixel data.
+* [get-image-pixels](https://ghub.io/get-image-pixels) − get pixel data for Canvas/Image/Video.
+* [get-image-data](https://ghub.io/get-image-data) − get image data for Canvas/Image/Video, browser-only
 
 ## License
 

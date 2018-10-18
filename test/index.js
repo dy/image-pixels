@@ -8,42 +8,31 @@ var match = require('pixelmatch')
 var assert = require('assert')
 var s2ab = require('arraybuffer-to-string')
 var fix = require('./fixture')
-var clipFix = [
-  0,255,255,255,     255,255,255,255,
-  255,255,255,255,   255,255,255,255
-]
-clipFix.width = 2
-clipFix.height = 2
-var pngFix = draw(fix).toDataURL('image/png')
-var jpgFix = draw(fix).toDataURL('image/jpeg', 1)
+var clipFix = {
+  data: [
+    0,255,255,255,     255,255,255,255,
+    255,255,255,255,   255,255,255,255
+  ],
+  width: 2,
+  height: 2
+}
+var pngFixData = draw(fix).toDataURL('image/png')
+var jpgFixData = draw(fix).toDataURL('image/jpeg', 1)
 
-async function testSource(arg) {
-  // async call
-  let data = await read(arg)
+async function testSource(arg, o) {
+  // direct
+  let data = await read(arg, o)
 
   assert.equal(data.width, fix.width)
   assert.equal(data.height, fix.height)
-  assert.equal(match(data, fix, null, fix.width, fix.height, {threshold: .004}), 0, 'No different async pixels')
+  assert.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'No different async pixels')
 
-  let clip = await read(arg, {x: 1, y: 1, h: 2, w: 2})
+  // clip
+  let clip = await read(arg, {clip: [1,1,3,3] })
 
   assert.equal(clip.width, 2)
   assert.equal(clip.height, 2)
-  assert.equal(match(clip, clipFix, null, 2, 2, {threshold: 0}), 0, 'No different clip pixels')
-
-  return new Promise((y, n) => {
-    // callback style call
-    read(arg, (err, data) => {
-      if(err) {
-        n(err)
-      } else {
-        assert.equal(data.width, fix.width)
-        assert.equal(data.height, fix.height)
-        assert.equal(match(data, fix, null, fix.width, fix.height, {threshold: 0}), 0, 'No different sync pixels')
-        y()
-      }
-    })
-  })
+  assert.equal(match(clip.data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'No different clip pixels')
 }
 
 
@@ -76,19 +65,15 @@ t('not existing path')
 t('not existing url')
 t('not an image url')
 t('data URL', t => {
-  testSource(pngFix)
-  testSource(jpgFix)
+  testSource(pngFixData)
+  testSource(jpgFixData)
   t.end()
 })
-// t('base64', t => {
-//   // raw
-//   testSource(s2ab(fix, 'base64'))
+t('base64', t => {
+  testSource(pngFixData.replace(/^data:image\/(png|jpg);base64,/, ''))
 
-//   // encoded
-//   testSource(pngFix.replace(/^data:image\/(png|jpg);base64,/, '')
-
-//   t.end()
-// })
+  t.end()
+})
 // t('bad string', t => {
 //   t.throws(() => {
 //     read('123ccc')
@@ -136,16 +121,13 @@ t('data URL', t => {
 // t('bmp')
 
 // // others
+// t(`options direct`)
 // t(`ndarray`)
 // t('regl')
 // t('gl- components')
 // t('null')
 
-
-// t('cache')
-// t('dict')
-// t('array')
-
+// t('multiple sources')
 
 // // get-pixels cases
 // t('get-pixels', function(t) {
@@ -294,14 +276,14 @@ t('data URL', t => {
 
 
 //draw buffer on the canvas
-function draw(px) {
+function draw({data, width, height}) {
     var canvas = document.createElement('canvas')
-    canvas.width = px.width
-    canvas.height = px.height
+    canvas.width = width
+    canvas.height = height
     var context = canvas.getContext('2d')
     var idata = context.createImageData(canvas.width, canvas.height)
-    for (var i = 0; i < px.length; i++) {
-      idata.data[i] = px[i]
+    for (var i = 0; i < data.length; i++) {
+      idata.data[i] = data[i]
     }
     context.putImageData(idata, 0, 0)
     return canvas
