@@ -15,21 +15,21 @@ var clipFix = [
 clipFix.width = 2
 clipFix.height = 2
 var pngFix = draw(fix).toDataURL('image/png')
-var jpgFix = draw(fix).toDataURL('image/jpeg')
+var jpgFix = draw(fix).toDataURL('image/jpeg', 1)
 
 async function testSource(arg) {
   // async call
   let data = await read(arg)
 
-  assert.deepEqual(data, fix)
   assert.equal(data.width, fix.width)
   assert.equal(data.height, fix.height)
+  assert.equal(match(data, fix, null, fix.width, fix.height, {threshold: .004}), 0, 'No different async pixels')
 
   let clip = await read(arg, {x: 1, y: 1, h: 2, w: 2})
 
-  assert.deepEqual(clip, clipFix)
   assert.equal(clip.width, 2)
   assert.equal(clip.height, 2)
+  assert.equal(match(clip, clipFix, null, 2, 2, {threshold: 0}), 0, 'No different clip pixels')
 
   return new Promise((y, n) => {
     // callback style call
@@ -37,9 +37,9 @@ async function testSource(arg) {
       if(err) {
         n(err)
       } else {
-        assert.deepEqual(data, fix)
         assert.equal(data.width, fix.width)
         assert.equal(data.height, fix.height)
+        assert.equal(match(data, fix, null, fix.width, fix.height, {threshold: 0}), 0, 'No different sync pixels')
         y()
       }
     })
@@ -60,6 +60,7 @@ t('some path', t => {
   testSource('test/test_pattern.png')
   t.end()
 })
+t('not existing path')
 // t('https', t => {
 //   testSource('https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
 //   t.end()
@@ -72,11 +73,13 @@ t('some path', t => {
 //   testSource('//raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
 //   t.end()
 // })
-// t('data URL', t => {
-//   testSource(pngFix)
-//   testSource(jpgFix)
-//   t.end()
-// })
+t('not existing url')
+t('not an image url')
+t('data URL', t => {
+  testSource(pngFix)
+  testSource(jpgFix)
+  t.end()
+})
 // t('base64', t => {
 //   // raw
 //   testSource(s2ab(fix, 'base64'))

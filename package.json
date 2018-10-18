@@ -8,6 +8,7 @@
   },
   "browser": "./browser.js",
   "dependencies": {
+    "file-type": "^10.0.0",
     "is-base64": "0.0.6",
     "is-plain-obj": "^1.1.0",
     "is-promise": "^2.1.0",

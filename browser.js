@@ -11,6 +11,7 @@
 var isPromise = require('is-promise')
 var isObj = require('is-plain-obj')
 var isBase64 = require('is-base64')
+var fileType = require('file-type')
 var toab = require('string-to-arraybuffer')
 
 
@@ -30,20 +31,33 @@ function load(src, o, cb) {
   var clip = o.clip || {}
   clip.x = o.x || o.left || 0
   clip.y = o.y || o.top || 0
-  clip.w = o.w || o.width
-  clip.h = o.h || o.height
+  clip.w = o.w || o.width || src.width
+  clip.h = o.h || o.height || src.height
 
   // handle source type
   var result
   if (typeof src === 'string') {
-    // convert base64, datauri to arraybuffer
-    if (isBase64(src) || /^data\:/i.test(src)) {
-      result = loadBuffer(toab(src))
+    // convert base64 to datauri
+    if (isBase64(src) && !/^data\:/i.test(src)) {
+      var buf = new Uint8Array(toab(src))
+      var type = fileType(buf)
+
+      // raw pixel data
+      if (!type) {
+        if (!clip.w || !clip.h) throw new Error('Raw data requires width and height options')
+        buf.width = clip.w
+        buf.height = clip.h
+        result = getImageData(buf)
+        result.width = buf.width
+        result.height = buf.height
+      }
+      else {
+        src = ['data:' + type.mime, 'base64,' + src].join(';')
+      }
     }
 
-    else {
-      result = loadURL(src)
-    }
+    // url, path, datauri
+    result = loadURL(src)
   }
 
   // make sure result is promise
@@ -115,16 +129,28 @@ function load(src, o, cb) {
     }
     canvas.width = img.width
     canvas.height = img.height
-    context.drawImage(img, 0, 0)
+
+    // raw pixels
+    if (img instanceof Uint8Array) {
+      var idata = context.createImageData(canvas.width, canvas.height)
+      for (var i = 0; i < img.length; i++) {
+        idata.data[i] = img[i]
+      }
+      context.putImageData(idata, 0, 0)
+    }
+    // img-like object
+    else {
+      context.drawImage(img, 0, 0)
+    }
 
     return context.getImageData(clip.x, clip.y, clip.w || img.width, clip.h || img.height)
   }
+
+  // convert arraybuffer to pixels
+  function loadBuffer (buffer) {
+  }
 }
 
-
-function loadBuffer (buffer) {
-
-}
 
 function loadDefault () {
   // imageBitmap first
