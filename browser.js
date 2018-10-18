@@ -142,7 +142,12 @@ function load(src, o) {
       context.drawImage(img, 0, 0)
     }
 
-    return context.getImageData(clip.x, clip.y, clip.width || width, clip.height || height)
+    var idata = context.getImageData(clip.x, clip.y, clip.width || width, clip.height || height)
+    var result = new Uint8Array(idata.data)
+    result.data = result.subarray()
+    result.width = idata.width
+    result.height = idata.height
+    return result
   }
 
   // convert arraybuffer to pixels

@@ -25,14 +25,14 @@ async function testSource(arg, o) {
 
   assert.equal(data.width, fix.width)
   assert.equal(data.height, fix.height)
-  assert.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'No different async pixels')
+  assert.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Different async pixels')
 
   // clip
   let clip = await read(arg, {clip: [1,1,3,3] })
 
   assert.equal(clip.width, 2)
   assert.equal(clip.height, 2)
-  assert.equal(match(clip.data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'No different clip pixels')
+  assert.equal(match(clip.data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'Different clip pixels')
 }
 
 
@@ -74,15 +74,15 @@ t('base64', t => {
 
   t.end()
 })
-// t('bad string', t => {
-//   t.throws(() => {
-//     read('123ccc')
-//   })
-//   t.throws(() => {
-//     read('$$$')
-//   })
-//   t.end()
-// })
+t.only('bad string', t => {
+  t.throws(() => {
+    read('123ccc')
+  })
+  t.throws(() => {
+    read('$$$')
+  })
+  t.end()
+})
 
 // // DOMs
 // t(`<img>`)
