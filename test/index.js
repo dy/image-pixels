@@ -7,7 +7,7 @@ var getPixels = require('../')
 var match = require('pixelmatch')
 var assert = require('assert')
 var s2ab = require('arraybuffer-to-string')
-var fix = require('./fixture')
+var fixture = require('./fixture')
 var clipFix = {
   data: [
     0,255,255,255,     255,255,255,255,
@@ -16,12 +16,12 @@ var clipFix = {
   width: 2,
   height: 2
 }
-var pngFixData = draw(fix).toDataURL('image/png')
-var jpgFixData = draw(fix).toDataURL('image/jpeg', 1)
+var pngFixData = draw(fixture).toDataURL('image/png')
+var jpgFixData = draw(fixture).toDataURL('image/jpeg', 1)
 
-const PER_SOURCE = 6
+const ASSERT_N = 10
 
-async function testSource(assert, arg, o) {
+async function testSource(assert, arg, o, fix=fixture) {
   // direct
   let to = setTimeout(function () {assert.fail('Direct timeout')}, 1000)
   let data = await getPixels(arg, o)
@@ -29,10 +29,19 @@ async function testSource(assert, arg, o) {
 
   assert.equal(data.width, fix.width)
   assert.equal(data.height, fix.height)
-  assert.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Different async pixels')
+  fix.data ?
+  assert.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Ok async pixels') :
+  assert.ok(data.data[0], 'Ok async pixels')
 
   // second time (cache)
-  // TODO
+  to = setTimeout(function () {assert.fail('Direct second timeout')}, 1000)
+  let data2 = await getPixels(arg, o)
+  clearTimeout(to)
+  assert.deepEqual(data.data, data2.data)
+  assert.equal(data2.width, fix.width)
+  assert.equal(data2.height, fix.height)
+  fix.data ? assert.equal(match(data2.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Ok async pixels twice') :
+  assert.ok(data2.data[0], 'Ok async pixels twice')
 
   // clip
   to = setTimeout(function () {assert.fail('Clip timeout')}, 1000)
@@ -41,23 +50,25 @@ async function testSource(assert, arg, o) {
 
   assert.equal(clip.width, 2)
   assert.equal(clip.height, 2)
-  assert.equal(match(clip.data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'Different clip pixels')
+  fix.data ?
+  assert.equal(match(clip.data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'Ok clip pixels') :
+  assert.ok(clip.data[0], 'Ok clip pixels')
 }
 
 
 // strings
 t('absolute path', async t => {
-  t.plan(PER_SOURCE)
+  t.plan(ASSERT_N)
   await testSource(t, path.resolve('./test/test_pattern.png'))
   t.end()
 })
 t('relative path', async t => {
-  t.plan(PER_SOURCE)
+  t.plan(ASSERT_N)
   await testSource(t, './test/test_pattern.png')
   t.end()
 })
 t('some path', async t => {
-  t.plan(PER_SOURCE)
+  t.plan(ASSERT_N)
   await testSource(t, 'test/test_pattern.png')
   t.end()
 })
@@ -77,19 +88,19 @@ t('not existing path')
 t('not existing url')
 t('not an image url')
 t('data URL', async t => {
-  t.plan(2 * PER_SOURCE)
+  t.plan(2 * ASSERT_N)
   await testSource(t, pngFixData)
   await testSource(t, jpgFixData)
   t.end()
 })
 t('base64', async t => {
-  t.plan(PER_SOURCE)
+  t.plan(ASSERT_N)
   await testSource(t, pngFixData.replace(/^data:image\/(png|jpg);base64,/, ''))
   t.end()
 })
 
 t.skip('bad string', async t => {
-  t.plan(PER_SOURCE)
+  t.plan(ASSERT_N)
   getPixels('$$$').catch(e => t.ok(e))
   // t.throws(() => {
   //   getPixels('$$$')
@@ -98,14 +109,14 @@ t.skip('bad string', async t => {
 
 // DOMs
 t(`<img>`, async t => {
-  t.plan(PER_SOURCE)
+  t.plan(ASSERT_N)
   let img = document.createElement('img')
   img.src = './test/test_pattern.png'
   await testSource(t, img)
   t.end()
 })
 t(`<image>`, async t => {
-  t.plan(PER_SOURCE)
+  t.plan(ASSERT_N)
   let el = document.createElement('div')
   el.innerHTML = `<svg width="200" height="200"
   xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><image xlink:href="./test/test_pattern.png"/>
@@ -116,15 +127,14 @@ t(`<image>`, async t => {
   t.end()
 })
 t(`<video>`, async t => {
+  t.plan(ASSERT_N)
   let el = document.createElement('div')
   document.body.appendChild(el)
   el.innerHTML = `<video src="./test/stream_of_water.webm"></video>`
 
-  let {width, data, height} = await getPixels(el.firstChild)
-
-  t.equal(height, 360)
-  t.equal(width, 480)
-  t.ok(data[0])
+  await testSource(t, el.firstChild, null, {
+    width: 480, height: 360
+  })
 
   t.end()
 })

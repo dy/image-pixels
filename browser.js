@@ -84,12 +84,10 @@ function getPixelData(src, o) {
 
   // <img>
   if (src instanceof Image) {
-    if ('complete' in src) {
-      if (src.complete) {
-        if (!width) width = src.width
-        if (!height) height = src.height
-        return Promise.resolve(readPixelData(src))
-      }
+    if (src.complete) {
+      if (!width) width = src.width
+      if (!height) height = src.height
+      return Promise.resolve(readPixelData(src))
     }
 
     return new Promise(function (ok, err) {
@@ -106,6 +104,12 @@ function getPixelData(src, o) {
 
   // <video>
   if (src instanceof HTMLVideoElement) {
+    if (src.readyState) {
+      if (!width) width = src.videoWidth
+      if (!height) height = src.videoHeight
+      return Promise.resolve(readPixelData(src))
+    }
+
     return new Promise(function (ok, err) {
       src.addEventListener('loadeddata', function () {
         if (!width) width = src.videoWidth
