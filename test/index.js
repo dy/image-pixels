@@ -3,7 +3,7 @@
 var t = require('tape')
 var fs = require('fs')
 var path = require('path')
-var read = require('../')
+var getPixels = require('../')
 var match = require('pixelmatch')
 var assert = require('assert')
 var s2ab = require('arraybuffer-to-string')
@@ -19,16 +19,21 @@ var clipFix = {
 var pngFixData = draw(fix).toDataURL('image/png')
 var jpgFixData = draw(fix).toDataURL('image/jpeg', 1)
 
-async function testSource(arg, o) {
+
+async function testSource(assert, arg, o) {
   // direct
-  let data = await read(arg, o)
+  let to = setTimeout(function () {assert.fail('Direct timeout')}, 1000)
+  let data = await getPixels(arg, o)
+  clearTimeout(to)
 
   assert.equal(data.width, fix.width)
   assert.equal(data.height, fix.height)
   assert.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Different async pixels')
 
   // clip
-  let clip = await read(arg, {clip: [1,1,3,3] })
+  to = setTimeout(function () {assert.fail('Clip timeout')}, 1000)
+  let clip = await getPixels(arg, {clip: [1,1,3,3] })
+  clearTimeout(to)
 
   assert.equal(clip.width, 2)
   assert.equal(clip.height, 2)
@@ -37,55 +42,64 @@ async function testSource(arg, o) {
 
 
 // strings
-t('absolute path', t => {
-  testSource(path.resolve('./test/test_pattern.png'))
+t('absolute path', async t => {
+  t.plan(6)
+  await testSource(t, path.resolve('./test/test_pattern.png'))
   t.end()
 })
-t('relative path', t => {
-  testSource('./test/test_pattern.png')
+t('relative path', async t => {
+  t.plan(6)
+  await testSource(t, './test/test_pattern.png')
   t.end()
 })
-t('some path', t => {
-  testSource('test/test_pattern.png')
+t('some path', async t => {
+  t.plan(6)
+  await testSource(t, 'test/test_pattern.png')
   t.end()
 })
 t('not existing path')
 // t('https', t => {
-//   testSource('https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
+//   await testSource(t, 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
 //   t.end()
 // })
 // t('http', t => {
-//   testSource('http://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
+//   await testSource(t, 'http://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
 //   t.end()
 // })
 // t('default URL', t => {
-//   testSource('//raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
+//   await testSource(t, '//raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
 //   t.end()
 // })
 t('not existing url')
 t('not an image url')
-t('data URL', t => {
-  testSource(pngFixData)
-  testSource(jpgFixData)
+t('data URL', async t => {
+  t.plan(12)
+  await testSource(t, pngFixData)
+  await testSource(t, jpgFixData)
   t.end()
 })
-t('base64', t => {
-  testSource(pngFixData.replace(/^data:image\/(png|jpg);base64,/, ''))
-
-  t.end()
-})
-t.only('bad string', t => {
-  t.throws(() => {
-    read('123ccc')
-  })
-  t.throws(() => {
-    read('$$$')
-  })
+t('base64', async t => {
+  t.plan(6)
+  await testSource(t, pngFixData.replace(/^data:image\/(png|jpg);base64,/, ''))
   t.end()
 })
 
-// // DOMs
-// t(`<img>`)
+t.skip('bad string', async t => {
+  t.plan(1)
+  getPixels('$$$').catch(e => t.ok(e))
+  // t.throws(() => {
+  //   getPixels('$$$')
+  // })
+})
+
+// DOMs
+t(`<img>`, async t => {
+  t.plan(6)
+  let img = document.createElement('img')
+  img.src = './test/test_pattern.png'
+  await testSource(t, img)
+  t.end()
+})
 // t(`<image>`)
 // t(`<video>`)
 // t(`<canvas>`)
@@ -131,7 +145,7 @@ t.only('bad string', t => {
 
 // // get-pixels cases
 // t('get-pixels', function(t) {
-//   read('test/lena.png', function(err, pixels) {
+//   getPixels('test/lena.png', function(err, pixels) {
 //     if(err) {
 //       t.assert(false)
 //     } else {
@@ -142,7 +156,7 @@ t.only('bad string', t => {
 // })
 
 // t('get-pixels-png', function(t) {
-//   read('test/test_pattern.png', function(err, pixels) {
+//   getPixels('test/test_pattern.png', function(err, pixels) {
 //     if(err) {
 //       t.error(err, 'failed to parse png')
 //       t.end()
@@ -155,7 +169,7 @@ t.only('bad string', t => {
 
 // /*
 // t('get-pixels-ppm', function(t) {
-//   read(path.join(__dirname, 'test_pattern.ppm'), function(err, pixels) {
+//   getPixels(path.join(__dirname, 'test_pattern.ppm'), function(err, pixels) {
 //     if(err) {
 //       t.error(err, 'failed to parse ppm')
 //       t.end()
@@ -168,7 +182,7 @@ t.only('bad string', t => {
 // */
 
 // t('get-pixels-jpg', function(t) {
-//   read('test/test_pattern.jpg', function(err, pixels) {
+//   getPixels('test/test_pattern.jpg', function(err, pixels) {
 //     if(err) {
 //       t.error(err, 'failed to parse jpg')
 //       t.end()
@@ -180,7 +194,7 @@ t.only('bad string', t => {
 // })
 
 // t('get-pixels-gif', function(t) {
-//   read('test/test_pattern.gif', function(err, pixels) {
+//   getPixels('test/test_pattern.gif', function(err, pixels) {
 //     if(err) {
 //       t.error(err, 'failed to parse gif')
 //       t.end()
@@ -193,7 +207,7 @@ t.only('bad string', t => {
 
 // /*
 // t('get-pixels-bmp', function(t) {
-//   read(path.join(__dirname, 'test_pattern.bmp'), function(err, pixels) {
+//   getPixels(path.join(__dirname, 'test_pattern.bmp'), function(err, pixels) {
 //     if(err) {
 //       t.error(err, 'failed to parse bmp')
 //       t.end()
@@ -207,7 +221,7 @@ t.only('bad string', t => {
 
 // t('data url', function(t) {
 //   var url = 'data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7'
-//   read(url, function(err, data) {
+//   getPixels(url, function(err, data) {
 //     if(err) {
 //       console.log(err)
 //       t.error('failed to read data url')
@@ -221,7 +235,7 @@ t.only('bad string', t => {
 
 // t('get-pixels-buffer', function(t) {
 //   var buffer = fs.readFileSync(__dirname + '/test_pattern.png')
-//   read(buffer, 'image/png', function(err, pixels) {
+//   getPixels(buffer, 'image/png', function(err, pixels) {
 //     if(err) {
 //       t.error(err, 'failed to parse buffer')
 //       t.end()
@@ -234,7 +248,7 @@ t.only('bad string', t => {
 
 // t('get-url png img', function(t) {
 //   var url = 'https://raw.githubusercontent.com/scijs/get-pixels/master/test/test_pattern.png';
-//   read(url, function(err, pixels){
+//   getPixels(url, function(err, pixels){
 //     if(err) {
 //       console.log('Error:', err);
 //       t.error(err, 'failed to read web image data');
@@ -248,7 +262,7 @@ t.only('bad string', t => {
 
 // t('get-url jpg img', function(t) {
 //   var url = 'https://raw.githubusercontent.com/scijs/get-pixels/master/test/test_pattern.jpg';
-//   read(url, function(err, pixels){
+//   getPixels(url, function(err, pixels){
 //     if(err) {
 //       console.log('Error:', err);
 //       t.error(err, 'failed to read web image data');
@@ -262,7 +276,7 @@ t.only('bad string', t => {
 
 // t('get-url gif img', function(t) {
 //   var url = 'https://raw.githubusercontent.com/scijs/get-pixels/master/test/test_pattern.gif';
-//   read(url, function(err, pixels){
+//   getPixels(url, function(err, pixels){
 //     if(err) {
 //       console.log('Error:', err);
 //       t.error(err, 'failed to read web image data');

@@ -11,7 +11,7 @@ Get pixel data for a given URL, path, buffer, canvas, image or any other source.
 var pixelData = require('get-pixel-data')
 
 // load single source
-var {data, width, height} = await pixelData('lena.png')
+var pixels = await pixelData('lena.png')
 
 // load multiple sources in parallel
 var [a, b, c] = await pixelData.all([
@@ -29,7 +29,7 @@ var dict = await pixelData({
 )
 ```
 
-### `{data, width, height} = await pixelData(source, options?)`
+### `pixels = await pixelData(source, options?)`
 
 Loads pixel data from `source`:
 
@@ -58,6 +58,12 @@ Option | Meaning
 `clip` | Clipping rectangle, `[left, top, right, bottom]` or `{x?, y?, width?, height?}`.
 <!-- `frame` | A frame # to read for animated image formats. -->
 <!-- `worker` | Delegate computation to worker, if available. Does not block main thread. -->
+
+`pixels` has `data`, `width` and `height` properties defined on it:
+
+```js
+var {data, width, height} = pixels
+```
 
 ### `list|dict = await pixelData.all(list|dict)`
 

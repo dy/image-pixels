@@ -54,7 +54,7 @@ function load(src, o) {
         if (!width || !height) throw new Error('Raw data requires options.width and options.height')
         buf.width = width
         buf.height = height
-        result = getImageData({data: buf})
+        result = getPixelData(buf)
       }
       else {
         src = ['data:' + type.mime, 'base64,' + src].join(';')
@@ -62,8 +62,27 @@ function load(src, o) {
     }
 
     // url, path, datauri
-    result = loadURL(src)
+    return loadURL(src)
   }
+
+  // loadable source: <img> etc.
+  if ('onload' in src && src.addEventListener) {
+    if (src.complete) {
+      return Promise.resolve(getPixelData(src))
+    }
+
+    return new Promise(function (ok, err) {
+      src.addEventListener('load', function () {
+        ok(getPixelData(src))
+      })
+      src.addEventListener('error', function(err) {
+        nok(err)
+      })
+    })
+  }
+
+  // any unknown source
+  result = loadDefault(src)
 
   // make sure result is promise
   if (!isPromise(result)) result = Promise.resolve(result)
@@ -111,7 +130,7 @@ function load(src, o) {
       img.onload = function() {
         if (!width) width = img.width
         if (!height) height = img.height
-        ok(getImageData(img))
+        ok(getPixelData(img))
       }
       img.onerror = function(err) {
         nok(err)
@@ -121,7 +140,7 @@ function load(src, o) {
   }
 
   var canvas, context
-  function getImageData(img) {
+  function getPixelData(img) {
     if (!canvas) {
       canvas = document.createElement('canvas')
       context = canvas.getContext('2d')
@@ -142,7 +161,7 @@ function load(src, o) {
       context.drawImage(img, 0, 0)
     }
 
-    var idata = context.getImageData(clip.x, clip.y, clip.width || width, clip.height || height)
+    var idata = context.getImageData(clip.x, clip.y, clip.width || img.width, clip.height || img.height)
     var result = new Uint8Array(idata.data)
     result.data = result.subarray()
     result.width = idata.width
@@ -153,46 +172,49 @@ function load(src, o) {
   // convert arraybuffer to pixels
   function loadBuffer (buffer) {
   }
+
+
+  function loadDefault (src) {
+    // imageBitmap first
+    if (global.createImageBitmap) {
+      if (!clip.width && !clip.height) return createImageBitmap(src)
+      return createImageBitmap(src, clip.x, clip.y, clip.width, clip.height)
+    }
+
+    // createObjectURL second
+    if (window.URL && window.URL.createObjectURL) {
+      var img = document.createElement('img')
+      img.addEventListener('load', function() {
+          resolve(this);
+      });
+      img.src = URL.createObjectURL(blob)
+    }
+
+    // Canvas2D third
+    else {
+      if (!img.crossOrigin) img.crossOrigin = 'Anonymous'
+
+      if (!context) {
+          canvas = document.createElement("canvas")
+          context = canvas.getContext('2d')
+      }
+
+      img.onload = function () {
+        var canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+        var context = canvas.getContext('2d')
+        context.drawImage(img, 0, 0)
+        var pixels = context.getImageData(0, 0, img.width, img.height)
+      }
+
+      img.onerror = function(err) {
+        nok(err)
+      }
+
+      img.src = url
+    }
+  }
 }
 
 
-function loadDefault () {
-  // imageBitmap first
-  if (window.createImageBitmap) {
-
-  }
-
-  // createObjectURL second
-  else if (window.URL && window.URL.createObjectURL) {
-    var img = document.createElement('img')
-    img.addEventListener('load', function() {
-        resolve(this);
-    });
-    img.src = URL.createObjectURL(blob)
-  }
-
-  // Canvas2D third
-  else {
-    if (!img.crossOrigin) img.crossOrigin = 'Anonymous'
-
-    if (!context) {
-        canvas = document.createElement("canvas")
-        context = canvas.getContext('2d')
-    }
-
-    img.onload = function () {
-      var canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
-      var context = canvas.getContext('2d')
-      context.drawImage(img, 0, 0)
-      var pixels = context.getImageData(0, 0, img.width, img.height)
-    }
-
-    img.onerror = function(err) {
-      nok(err)
-    }
-
-    img.src = url
-  }
-}
