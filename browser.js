@@ -17,11 +17,11 @@ var rect = require('parse-rect')
 var extend = require('object-assign')
 
 
-module.exports = load
+module.exports = getPixelData
 module.exports.all = require('./lib/all')
 
 
-function load(src, o) {
+function getPixelData(src, o) {
   // handle arguments
   if (isObj(src)) {
     o = extend(src, o)
@@ -52,9 +52,7 @@ function load(src, o) {
       // raw pixel data
       if (!type) {
         if (!width || !height) throw new Error('Raw data requires options.width and options.height')
-        buf.width = width
-        buf.height = height
-        result = getPixelData(buf)
+        result = readPixelData(buf, width, height)
       }
       else {
         src = ['data:' + type.mime, 'base64,' + src].join(';')
@@ -62,18 +60,57 @@ function load(src, o) {
     }
 
     // url, path, datauri
-    return loadURL(src)
+    return new Promise(function (ok, nok) {
+      var img = new Image()
+      img.crossOrigin = 'Anonymous'
+      img.onload = function() {
+        if (!width) width = img.width
+        if (!height) height = img.height
+        ok(readPixelData(img))
+      }
+      img.onerror = function(err) {
+        nok(err)
+      }
+      img.src = src
+    })
   }
 
-  // loadable source: <img> etc.
-  if ('onload' in src && src.addEventListener) {
-    if (src.complete) {
-      return Promise.resolve(getPixelData(src))
+  // SVG Image
+  if (global.SVGImageElement && src instanceof SVGImageElement) {
+    var url = src.getAttribute('xlink:href')
+    src = new Image()
+    src.src = url
+  }
+
+  // <img>
+  if (src instanceof Image) {
+    if ('complete' in src) {
+      if (src.complete) {
+        if (!width) width = src.width
+        if (!height) height = src.height
+        return Promise.resolve(readPixelData(src))
+      }
     }
 
     return new Promise(function (ok, err) {
       src.addEventListener('load', function () {
-        ok(getPixelData(src))
+        if (!width) width = src.width
+        if (!height) height = src.height
+        ok(readPixelData(src))
+      })
+      src.addEventListener('error', function(err) {
+        nok(err)
+      })
+    })
+  }
+
+  // <video>
+  if (src instanceof HTMLVideoElement) {
+    return new Promise(function (ok, err) {
+      src.addEventListener('loadeddata', function () {
+        if (!width) width = src.videoWidth
+        if (!height) height = src.videoHeight
+        ok(readPixelData(src))
       })
       src.addEventListener('error', function(err) {
         nok(err)
@@ -82,7 +119,9 @@ function load(src, o) {
   }
 
   // any unknown source
-  result = loadDefault(src)
+  if (!width) width = src.width
+  if (!height) height = src.height
+  result = readPixelData(src)
 
   // make sure result is promise
   if (!isPromise(result)) result = Promise.resolve(result)
@@ -123,34 +162,18 @@ function load(src, o) {
 
   // }
 
-  function loadURL (url) {
-    return new Promise(function (ok, nok) {
-      var img = new Image()
-      img.crossOrigin = 'Anonymous'
-      img.onload = function() {
-        if (!width) width = img.width
-        if (!height) height = img.height
-        ok(getPixelData(img))
-      }
-      img.onerror = function(err) {
-        nok(err)
-      }
-      img.src = url
-    })
-  }
-
   var canvas, context
-  function getPixelData(img) {
+  function readPixelData(img) {
     if (!canvas) {
       canvas = document.createElement('canvas')
       context = canvas.getContext('2d')
     }
-    canvas.width = img.width
-    canvas.height = img.height
+    canvas.width = width
+    canvas.height = height
 
     // raw pixels
     if (img instanceof Uint8Array) {
-      var idata = context.createImageData(canvas.width, canvas.height)
+      var idata = context.createImageData(width, height)
       for (var i = 0; i < img.length; i++) {
         idata.data[i] = img[i]
       }
@@ -161,59 +184,12 @@ function load(src, o) {
       context.drawImage(img, 0, 0)
     }
 
-    var idata = context.getImageData(clip.x, clip.y, clip.width || img.width, clip.height || img.height)
+    var idata = context.getImageData(clip.x, clip.y, clip.width || width, clip.height || height)
     var result = new Uint8Array(idata.data)
     result.data = result.subarray()
     result.width = idata.width
     result.height = idata.height
     return result
-  }
-
-  // convert arraybuffer to pixels
-  function loadBuffer (buffer) {
-  }
-
-
-  function loadDefault (src) {
-    // imageBitmap first
-    if (global.createImageBitmap) {
-      if (!clip.width && !clip.height) return createImageBitmap(src)
-      return createImageBitmap(src, clip.x, clip.y, clip.width, clip.height)
-    }
-
-    // createObjectURL second
-    if (window.URL && window.URL.createObjectURL) {
-      var img = document.createElement('img')
-      img.addEventListener('load', function() {
-          resolve(this);
-      });
-      img.src = URL.createObjectURL(blob)
-    }
-
-    // Canvas2D third
-    else {
-      if (!img.crossOrigin) img.crossOrigin = 'Anonymous'
-
-      if (!context) {
-          canvas = document.createElement("canvas")
-          context = canvas.getContext('2d')
-      }
-
-      img.onload = function () {
-        var canvas = document.createElement('canvas')
-        canvas.width = img.width
-        canvas.height = img.height
-        var context = canvas.getContext('2d')
-        context.drawImage(img, 0, 0)
-        var pixels = context.getImageData(0, 0, img.width, img.height)
-      }
-
-      img.onerror = function(err) {
-        nok(err)
-      }
-
-      img.src = url
-    }
   }
 }
 

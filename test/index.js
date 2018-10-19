@@ -19,6 +19,7 @@ var clipFix = {
 var pngFixData = draw(fix).toDataURL('image/png')
 var jpgFixData = draw(fix).toDataURL('image/jpeg', 1)
 
+const PER_SOURCE = 6
 
 async function testSource(assert, arg, o) {
   // direct
@@ -29,6 +30,9 @@ async function testSource(assert, arg, o) {
   assert.equal(data.width, fix.width)
   assert.equal(data.height, fix.height)
   assert.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Different async pixels')
+
+  // second time (cache)
+  // TODO
 
   // clip
   to = setTimeout(function () {assert.fail('Clip timeout')}, 1000)
@@ -43,17 +47,17 @@ async function testSource(assert, arg, o) {
 
 // strings
 t('absolute path', async t => {
-  t.plan(6)
+  t.plan(PER_SOURCE)
   await testSource(t, path.resolve('./test/test_pattern.png'))
   t.end()
 })
 t('relative path', async t => {
-  t.plan(6)
+  t.plan(PER_SOURCE)
   await testSource(t, './test/test_pattern.png')
   t.end()
 })
 t('some path', async t => {
-  t.plan(6)
+  t.plan(PER_SOURCE)
   await testSource(t, 'test/test_pattern.png')
   t.end()
 })
@@ -73,19 +77,19 @@ t('not existing path')
 t('not existing url')
 t('not an image url')
 t('data URL', async t => {
-  t.plan(12)
+  t.plan(2 * PER_SOURCE)
   await testSource(t, pngFixData)
   await testSource(t, jpgFixData)
   t.end()
 })
 t('base64', async t => {
-  t.plan(6)
+  t.plan(PER_SOURCE)
   await testSource(t, pngFixData.replace(/^data:image\/(png|jpg);base64,/, ''))
   t.end()
 })
 
 t.skip('bad string', async t => {
-  t.plan(1)
+  t.plan(PER_SOURCE)
   getPixels('$$$').catch(e => t.ok(e))
   // t.throws(() => {
   //   getPixels('$$$')
@@ -94,14 +98,37 @@ t.skip('bad string', async t => {
 
 // DOMs
 t(`<img>`, async t => {
-  t.plan(6)
+  t.plan(PER_SOURCE)
   let img = document.createElement('img')
   img.src = './test/test_pattern.png'
   await testSource(t, img)
   t.end()
 })
-// t(`<image>`)
-// t(`<video>`)
+t(`<image>`, async t => {
+  t.plan(PER_SOURCE)
+  let el = document.createElement('div')
+  el.innerHTML = `<svg width="200" height="200"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><image xlink:href="./test/test_pattern.png"/>
+  </svg>
+  `
+  let img = el.firstChild.firstChild
+  await testSource(t, img)
+  t.end()
+})
+t(`<video>`, async t => {
+  let el = document.createElement('div')
+  document.body.appendChild(el)
+  el.innerHTML = `<video src="./test/stream_of_water.webm"></video>`
+
+  let {width, data, height} = await getPixels(el.firstChild)
+
+  t.equal(height, 360)
+  t.equal(width, 480)
+  t.ok(data[0])
+
+  t.end()
+})
+t('<picture>')
 // t(`<canvas>`)
 // t(`HTMLImageElement`)
 // t(`SVGImageElement`)
