@@ -38,8 +38,10 @@ Loads pixel data from `source`:
 * `<img>`, `<image>`, `<video>`, `<canvas>`
 * `HTMLImageElement`, `SVGImageElement`, `HTMLVideoElement`, `CSSImageValue`
 * `Image`, `ImageData`, `ImageBitmap`
-* `File`, `Blob`, `MediaSource`
-* `Canvas`, `OffscreenCanvas`
+* `File`, `Blob`
+* `MediaSource` [by request]
+* `OffscreenCanvas` [by request]
+* `Canvas`
 * `Context2D`
 * `WebGLContext`
 * `Buffer`, `ArrayBuffer`, `ArrayBufferView`

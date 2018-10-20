@@ -5,11 +5,11 @@ var fs = require('fs')
 var path = require('path')
 var getPixels = require('../')
 var match = require('pixelmatch')
-var assert = require('assert')
 var s2ab = require('string-to-arraybuffer')
 var fixture = require('./fixture')
 var ab2s = require('arraybuffer-to-string')
 var x = require('object-assign')
+var regl = require('regl')
 
 var clipFix = {
   data: [
@@ -96,7 +96,7 @@ t('data URL', async t => {
   await testSource(t, jpgFixData)
   t.end()
 })
-t.skip('base64', async t => {
+t('base64', async t => {
   t.plan(ASSERT_N)
   await testSource(t, pngFixData.replace(/^data:image\/(png|jpg);base64,/, ''))
   t.end()
@@ -194,8 +194,36 @@ t(`File, Blob`, async t => {
 
   t.end()
 })
-// t(`MediaSource`)
-// t(`OffscreenCanvas`)
+t('SourceBuffer')
+t('SourceBufferList')
+t.skip(`MediaSource`, async t => {
+  t.plan(ASSERT_N)
+
+  var mediaSource = new MediaSource()
+  var video = new HTMLVideoElement()
+  video.src = URL.createObjectURL(mediaSource)
+  mediaSource.addEventListener('sourceopen', function () {
+    mediaSource.addSourceBuffer(mimeCodec)
+  })
+
+  // await testSource(t, new)
+
+  t.end()
+})
+
+t.skip(`OffscreenCanvas, bitmaprenderer`, async t => {
+  t.plan(ASSERT_N * 2)
+
+  let offscreen = new OffscreenCanvas(fixture.width, fixture.height)
+  let context = offscreen.getContext('webgl')
+
+  // ... some drawing for the first canvas using the gl context ...
+
+  // Commit rendering to the first canvas
+  var bm = offscreen.transferToImageBitmap()
+
+  one.transferImageBitmap(bm);
+})
 t(`Context2D`, async t => {
   t.plan(ASSERT_N)
   var canvas = drawToCanvas(fixture)
@@ -208,7 +236,56 @@ t(`Canvas`, async t => {
   await testSource(t, canvas)
   t.end()
 })
-// t(`WebGLContext`)
+t(`WebGLContext`, async t => {
+  t.plan(ASSERT_N)
+
+  var canvas = document.createElement('canvas')
+  canvas.width = fixture.width
+  canvas.height = fixture.height
+  document.body.appendChild(canvas)
+  var draw = regl({canvas})({
+    vert: `
+      precision mediump float;
+      attribute vec2 position;
+      attribute vec4 color;
+      uniform vec2 shape;
+      varying vec4 fragColor;
+      void main() {
+        gl_PointSize = 1.;
+        gl_Position = vec4( 2. * (position + .5) / shape - 1., 0, 1);
+        gl_Position.y *= -1.;
+        fragColor = color / 255.;
+      }`,
+    frag: `
+    precision mediump float;
+    varying vec4 fragColor;
+    void main () {
+      gl_FragColor = fragColor;
+    }`,
+    attributes: {
+      color: [
+        0,0,0,255, 255,0,0,255, 255,255,0,255, 255,0,255,255,
+        0,255,0,255, 0,255,255,255,
+        0,0,255,255
+      ],
+      position: [
+        0,0, 1,0, 2,0, 3,0,
+        0,1, 1,1,
+        0,2
+      ]
+    },
+    uniforms: {
+      shape: [16, 8]
+    },
+    primitive: 'points',
+    count: 7
+  })
+  draw()
+
+  await testSource(t, canvas)
+
+  t.end()
+})
 
 // // buffers
 // t(`Buffer`)
