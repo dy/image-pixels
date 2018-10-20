@@ -46,6 +46,7 @@ Loads pixel data from `source`:
 * `Uint8Array`, `Uint8ClampedArray`
 * `Float32Array`, `Float64Array`, `Array`, `Array` of arrays
 * `ndarray`
+* `Promise`
 * regl, gl- components and other
 * options object
 

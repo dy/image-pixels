@@ -118,24 +118,19 @@ function getPixelData(src, o) {
     })
   }
 
-  // any other source
+  // any other source, inc. promises
+  return Promise.resolve(src).then(function (src) {
+    // retrieve buffer from buffer containers
+    src = src.data || src.buffer || src._data || src
+    captureShape(src)
 
-  // retrieve buffer from buffer containers
-  src = src.data || src.buffer || src._data || src
-  captureShape(src)
+    // retrieve canvas from contexts
+    var ctx = src.gl || src.context || src.ctx
+    src = ctx && ctx.canvas || src.canvas || src
+    captureShape(src)
 
-  // retrieve canvas from contexts
-  var ctx = src.gl || src.context || src.ctx
-  src = ctx && ctx.canvas || src.canvas || src
-  captureShape(src)
-
-
-  result = readPixelData(src)
-
-  // make sure result is promise
-  if (!isPromise(result)) result = Promise.resolve(result)
-
-  return result
+    return readPixelData(src)
+  })
 
   // else {
   //   if (arg.buffer || arg.data || arg._data)

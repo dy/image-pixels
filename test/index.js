@@ -170,8 +170,16 @@ t(`ImageData`, async t => {
   await testSource(t, idata)
   t.end()
 })
-t.skip(`ImageBitmap`, async t => {
+t(`ImageBitmap`, async t => {
+  t.plan(ASSERT_N * 2)
+  var canvas = drawToCanvas(fixture)
+  let bm = createImageBitmap(canvas)
+  await testSource(t, bm)
 
+  bm = await createImageBitmap(canvas)
+  await testSource(t, bm)
+
+  t.end()
 })
 // t(`File`)
 // t(`Blob`)
