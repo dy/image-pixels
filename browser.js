@@ -31,10 +31,11 @@ function getPixelData(src, o) {
   else if (Array.isArray(o)) o = {shape: o}
 
   // detect clipping
-  var width = o.shape && o.shape[0] || o.w || o.width
-  var height = o.shape && o.shape[1] || o.h || o.height
+  var width, height
   var clip = o.clip && rect(o.clip) || {x:0, y: 0}
   var type = o.type || o.mime
+  captureShape(o)
+  captureShape(src)
 
   // handle source type
   var result
@@ -52,7 +53,7 @@ function getPixelData(src, o) {
       // raw pixel data
       if (!type) {
         if (!width || !height) throw new Error('Raw data requires options.width and options.height')
-        result = readPixelData(buf, width, height)
+        result = readPixelData(buf)
       }
       else {
         src = ['data:' + type.mime, 'base64,' + src].join(';')
@@ -64,8 +65,7 @@ function getPixelData(src, o) {
       var img = new Image()
       img.crossOrigin = 'Anonymous'
       img.onload = function() {
-        if (!width) width = img.width
-        if (!height) height = img.height
+        captureShape(img)
         ok(readPixelData(img))
       }
       img.onerror = function(err) {
@@ -85,15 +85,13 @@ function getPixelData(src, o) {
   // <img>
   if (src instanceof Image) {
     if (src.complete) {
-      if (!width) width = src.width
-      if (!height) height = src.height
+      captureShape(src)
       return Promise.resolve(readPixelData(src))
     }
 
     return new Promise(function (ok, err) {
       src.addEventListener('load', function () {
-        if (!width) width = src.width
-        if (!height) height = src.height
+        captureShape(src)
         ok(readPixelData(src))
       })
       src.addEventListener('error', function(err) {
@@ -103,17 +101,15 @@ function getPixelData(src, o) {
   }
 
   // <video>
-  if (src instanceof HTMLVideoElement) {
+  if (src instanceof HTMLMediaElement) {
     if (src.readyState) {
-      if (!width) width = src.videoWidth
-      if (!height) height = src.videoHeight
+      captureShape({w: src.videoWidth, h: src.videoHeight})
       return Promise.resolve(readPixelData(src))
     }
 
     return new Promise(function (ok, err) {
       src.addEventListener('loadeddata', function () {
-        if (!width) width = src.videoWidth
-        if (!height) height = src.videoHeight
+        captureShape({w: src.videoWidth, h: src.videoHeight})
         ok(readPixelData(src))
       })
       src.addEventListener('error', function(err) {
@@ -122,9 +118,18 @@ function getPixelData(src, o) {
     })
   }
 
-  // any unknown source
-  if (!width) width = src.width
-  if (!height) height = src.height
+  // any other source
+
+  // retrieve buffer from buffer containers
+  src = src.data || src.buffer || src._data || src
+  captureShape(src)
+
+  // retrieve canvas from contexts
+  var ctx = src.gl || src.context || src.ctx
+  src = ctx && ctx.canvas || src.canvas || src
+  captureShape(src)
+
+
   result = readPixelData(src)
 
   // make sure result is promise
@@ -176,14 +181,14 @@ function getPixelData(src, o) {
     canvas.height = height
 
     // raw pixels
-    if (img instanceof Uint8Array) {
+    if (img instanceof Uint8Array || img instanceof Uint8ClampedArray) {
       var idata = context.createImageData(width, height)
       for (var i = 0; i < img.length; i++) {
         idata.data[i] = img[i]
       }
       context.putImageData(idata, 0, 0)
     }
-    // img-like object
+    // default img-like object
     else {
       context.drawImage(img, 0, 0)
     }
@@ -194,6 +199,13 @@ function getPixelData(src, o) {
     result.width = idata.width
     result.height = idata.height
     return result
+  }
+
+  // try to figure out width/height from container
+  function captureShape(container) {
+    // SVG had width as object
+    if (!width || typeof width !== 'number') width = container && container.shape && container.shape[0] || container.width || container.w
+    if (!height || typeof height !== 'number') height = container && container.shape && container.shape[1] || container.height || container.h
   }
 }
 

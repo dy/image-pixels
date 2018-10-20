@@ -16,8 +16,8 @@ var clipFix = {
   width: 2,
   height: 2
 }
-var pngFixData = draw(fixture).toDataURL('image/png')
-var jpgFixData = draw(fixture).toDataURL('image/jpeg', 1)
+var pngFixData = drawToCanvas(fixture).toDataURL('image/png')
+var jpgFixData = drawToCanvas(fixture).toDataURL('image/jpeg', 1)
 
 const ASSERT_N = 10
 
@@ -138,20 +138,58 @@ t(`<video>`, async t => {
 
   t.end()
 })
-t('<picture>')
-// t(`<canvas>`)
-// t(`HTMLImageElement`)
-// t(`SVGImageElement`)
-// t(`HTMLVideoElement`)
-// t(`Image`)
-// t(`ImageData`)
-// t(`ImageBitmap`)
+t.skip('<picture>', async t => {
+  t.plan(ASSERT_N)
+  let el = document.createElement('div')
+  el.innerHTML = `<picture>
+    <source srcset="/media/cc0-images/Wave_and_Surfer--240x200.jpg"
+            media="(min-width: 800px)">
+    <img src="/media/cc0-images/Painted_Hand--298x332.jpg">
+  </picture>`
+  await testSource(t, el.firstChild)
+  t.end()
+})
+t(`Image`, async t => {
+  t.plan(ASSERT_N)
+  let img = new Image
+  img.src = './test/test_pattern.png'
+  await testSource(t, img)
+  t.end()
+})
+t(`ImageData`, async t => {
+  t.plan(ASSERT_N)
+  var context = document.createElement('canvas').getContext('2d')
+  var idata = context.createImageData(fixture.width, fixture.height)
+  for (var i = 0; i < fixture.data.length; i++) {
+    idata.data[i] = fixture.data[i]
+  }
+  // context.canvas.width = fixture.width
+  // context.canvas.height = fixture.height
+  // context.putImageData(idata, 0, 0)
+
+  await testSource(t, idata)
+  t.end()
+})
+t.skip(`ImageBitmap`, async t => {
+
+})
 // t(`File`)
 // t(`Blob`)
 // t(`MediaSource`)
 // t(`Canvas`)
 // t(`OffscreenCanvas`)
-// t(`Context2D`)
+t(`Context2D`, async t => {
+  t.plan(ASSERT_N)
+  var canvas = drawToCanvas(fixture)
+  await testSource(t, canvas.getContext('2d'))
+  t.end()
+})
+t(`Canvas`, async t => {
+  t.plan(ASSERT_N)
+  var canvas = drawToCanvas(fixture)
+  await testSource(t, canvas)
+  t.end()
+})
 // t(`WebGLContext`)
 
 // // buffers
@@ -327,7 +365,7 @@ t('<picture>')
 
 
 //draw buffer on the canvas
-function draw({data, width, height}) {
+function drawToCanvas({data, width, height}) {
     var canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
