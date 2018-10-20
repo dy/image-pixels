@@ -3,10 +3,6 @@
 
 // var extname = require('get-ext')
 // var GifReader = require('omggif').GifReader
-// var parseDataURI = require('data-uri-to-buffer')
-// var isBuffer = require('is-buffer')
-// var isUrl = require('is-url')
-// var isBlob = require('is-blob')
 
 var isPromise = require('is-promise')
 var isObj = require('is-plain-obj')
@@ -15,6 +11,7 @@ var fileType = require('file-type')
 var toab = require('string-to-arraybuffer')
 var rect = require('parse-rect')
 var extend = require('object-assign')
+var isBlob = require('is-blob')
 
 
 module.exports = getPixelData
@@ -37,8 +34,13 @@ function getPixelData(src, o) {
   captureShape(o)
   captureShape(src)
 
+  // File & Blob
+  if (isBlob(src) || (src instanceof File)) {
+    // FIXME: try to use createImageBitmap for Blob
+    src = URL.createObjectURL(src)
+  }
+
   // handle source type
-  var result
   if (typeof src === 'string') {
     // convert base64 to datauri
     if (isBase64(src) && !/^data\:/i.test(src)) {
@@ -49,11 +51,10 @@ function getPixelData(src, o) {
         type = fileType(buf)
         type = type && type.mime
       }
-
       // raw pixel data
       if (!type) {
         if (!width || !height) throw new Error('Raw data requires options.width and options.height')
-        result = readPixelData(buf)
+        return readPixelData(buf)
       }
       else {
         src = ['data:' + type.mime, 'base64,' + src].join(';')
@@ -176,12 +177,14 @@ function getPixelData(src, o) {
     canvas.height = height
 
     // raw pixels
+    // FIXME: for clipping case that might be faster to copy just a slice of pixels
+    // FIXME: or even better - ignore drawing pixels to canvas and just pick them directly
     if (img instanceof Uint8Array || img instanceof Uint8ClampedArray) {
-      var idata = context.createImageData(width, height)
+      var rawData = context.createImageData(width, height)
       for (var i = 0; i < img.length; i++) {
-        idata.data[i] = img[i]
+        rawData.data[i] = img[i]
       }
-      context.putImageData(idata, 0, 0)
+      context.putImageData(rawData, 0, 0)
     }
     // default img-like object
     else {

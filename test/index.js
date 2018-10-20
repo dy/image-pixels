@@ -6,8 +6,11 @@ var path = require('path')
 var getPixels = require('../')
 var match = require('pixelmatch')
 var assert = require('assert')
-var s2ab = require('arraybuffer-to-string')
+var s2ab = require('string-to-arraybuffer')
 var fixture = require('./fixture')
+var ab2s = require('arraybuffer-to-string')
+var x = require('object-assign')
+
 var clipFix = {
   data: [
     0,255,255,255,     255,255,255,255,
@@ -45,7 +48,7 @@ async function testSource(assert, arg, o, fix=fixture) {
 
   // clip
   to = setTimeout(function () {assert.fail('Clip timeout')}, 1000)
-  let clip = await getPixels(arg, {clip: [1,1,3,3] })
+  let clip = await getPixels(arg, x({clip: [1,1,3,3]}, o))
   clearTimeout(to)
 
   assert.equal(clip.width, 2)
@@ -93,9 +96,14 @@ t('data URL', async t => {
   await testSource(t, jpgFixData)
   t.end()
 })
-t('base64', async t => {
+t.skip('base64', async t => {
   t.plan(ASSERT_N)
   await testSource(t, pngFixData.replace(/^data:image\/(png|jpg);base64,/, ''))
+  t.end()
+})
+t('raw pixels base64', async t => {
+  t.plan(ASSERT_N)
+  await testSource(t, ab2s(fixture.data, 'base64'), {w:16, h:8})
   t.end()
 })
 
@@ -163,9 +171,6 @@ t(`ImageData`, async t => {
   for (var i = 0; i < fixture.data.length; i++) {
     idata.data[i] = fixture.data[i]
   }
-  // context.canvas.width = fixture.width
-  // context.canvas.height = fixture.height
-  // context.putImageData(idata, 0, 0)
 
   await testSource(t, idata)
   t.end()
@@ -181,10 +186,15 @@ t(`ImageBitmap`, async t => {
 
   t.end()
 })
-// t(`File`)
-// t(`Blob`)
+t(`File, Blob`, async t => {
+  t.plan(ASSERT_N * 2)
+
+  await testSource(t, new File([s2ab(pngFixData)], 'file.png'))
+  await testSource(t, new Blob([s2ab(pngFixData)]))
+
+  t.end()
+})
 // t(`MediaSource`)
-// t(`Canvas`)
 // t(`OffscreenCanvas`)
 t(`Context2D`, async t => {
   t.plan(ASSERT_N)
