@@ -39,8 +39,8 @@ Loads pixel data from `source`:
 * `HTMLImageElement`, `SVGImageElement`, `HTMLVideoElement`, `CSSImageValue`
 * `Image`, `ImageData`, `ImageBitmap`
 * `File`, `Blob`
-* `MediaSource` [by request]
-* `OffscreenCanvas` [by request]
+* `MediaSource` [pending]
+* `OffscreenCanvas` [pending]
 * `Canvas`
 * `Context2D`
 * `WebGLContext`
@@ -77,7 +77,7 @@ Load multiple sources or dict of sources in parallel.
 
 * [get-pixels](https://ghub.io/get-pixels) − get ndarray with pixel data.
 * [get-image-pixels](https://ghub.io/get-image-pixels) − get pixel data for Canvas/Image/Video.
-* [get-image-data](https://ghub.io/get-image-data) − get image data for Canvas/Image/Video, browser-only
+* [get-image-data](https://ghub.io/get-image-data) − get image data for Canvas/Image/Video, browser-only.
 
 ## License
 

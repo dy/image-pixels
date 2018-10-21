@@ -8,6 +8,7 @@
   },
   "browser": "./browser.js",
   "dependencies": {
+    "arr-flatten": "^1.1.0",
     "file-type": "^10.0.0",
     "is-base64": "0.0.6",
     "is-blob": "^1.0.0",

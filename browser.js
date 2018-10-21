@@ -12,6 +12,7 @@ var toab = require('string-to-arraybuffer')
 var rect = require('parse-rect')
 var extend = require('object-assign')
 var isBlob = require('is-blob')
+var flat = require('arr-flatten')
 
 
 module.exports = getPixelData
@@ -46,19 +47,15 @@ function getPixelData(src, o) {
     if (isBase64(src) && !/^data\:/i.test(src)) {
       var buf = new Uint8Array(toab(src))
 
-      // detect type if not passed in options
-      if (!type) {
-        type = fileType(buf)
-        type = type && type.mime
-      }
+      captureMime(buf)
+
       // raw pixel data
       if (!type) {
-        if (!width || !height) throw new Error('Raw data requires options.width and options.height')
         return readPixelData(buf)
       }
-      else {
-        src = ['data:' + type.mime, 'base64,' + src].join(';')
-      }
+
+      // encoded image data - fall back to default url
+      src = ['data:' + type, 'base64,' + src].join(';')
     }
 
     // url, path, datauri
@@ -119,11 +116,21 @@ function getPixelData(src, o) {
     })
   }
 
-  // any other source, inc. promises
+  // any other source, inc. unresolved promises
   return Promise.resolve(src).then(function (src) {
+    // float data → uint data
+    if ((src instanceof Float32Array) || (src instanceof Float64Array)) {
+      var buf = new Uint8Array(src.length)
+      for (let i = 0; i < src.length; i++) {
+        buf[i] = src[i] * 255
+      }
+      src = buf
+    }
+
     // retrieve buffer from buffer containers
     src = src.data || src.buffer || src._data || src
     captureShape(src)
+    captureMime(src)
 
     // retrieve canvas from contexts
     var ctx = src.gl || src.context || src.ctx
@@ -176,10 +183,24 @@ function getPixelData(src, o) {
     canvas.width = width
     canvas.height = height
 
+    // array of arrays
+    if (Array.isArray(img)) {
+      // [r,g,b,a,r,g,b,a,...]
+      // [[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]]]
+      // [[r,g,b,a], [r,g,b,a], [r,g,b,a], [r,g,b,a]]
+      // [[r,g,b,a,r,g,b,a], [r,g,b,a,r,g,b,a]]
+      img = new Uint8Array(flat(img))
+    }
+
     // raw pixels
+    if (img instanceof ArrayBuffer) {
+      img = new Uint8Array(img)
+    }
+
     // FIXME: for clipping case that might be faster to copy just a slice of pixels
     // FIXME: or even better - ignore drawing pixels to canvas and just pick them directly
     if (img instanceof Uint8Array || img instanceof Uint8ClampedArray) {
+      if (!width || !height) throw new Error('Raw data requires options.width and options.height')
       var rawData = context.createImageData(width, height)
       for (var i = 0; i < img.length; i++) {
         rawData.data[i] = img[i]
@@ -205,6 +226,14 @@ function getPixelData(src, o) {
     if (!width || typeof width !== 'number') width = container && container.shape && container.shape[0] || container.width || container.w
     if (!height || typeof height !== 'number') height = container && container.shape && container.shape[1] || container.height || container.h
   }
-}
 
+  // if buffer is raw px data
+  function captureMime(buf) {
+    // detect type if not passed in options
+    if (!type) {
+      type = fileType(buf)
+      type = type && type.mime
+    }
+  }
+}
 

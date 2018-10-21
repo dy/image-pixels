@@ -10,6 +10,7 @@ var fixture = require('./fixture')
 var ab2s = require('arraybuffer-to-string')
 var x = require('object-assign')
 var regl = require('regl')
+var a = require('assert')
 
 var clipFix = {
   data: [
@@ -75,7 +76,7 @@ t('some path', async t => {
   await testSource(t, 'test/test_pattern.png')
   t.end()
 })
-t('not existing path')
+t.skip('not existing path')
 // t('https', t => {
 //   await testSource(t, 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
 //   t.end()
@@ -88,8 +89,8 @@ t('not existing path')
 //   await testSource(t, '//raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
 //   t.end()
 // })
-t('not existing url')
-t('not an image url')
+t.skip('not existing url')
+t.skip('not an image url')
 t('data URL', async t => {
   t.plan(2 * ASSERT_N)
   await testSource(t, pngFixData)
@@ -106,7 +107,6 @@ t('raw pixels base64', async t => {
   await testSource(t, ab2s(fixture.data, 'base64'), {w:16, h:8})
   t.end()
 })
-
 t.skip('bad string', async t => {
   t.plan(ASSERT_N)
   getPixels('$$$').catch(e => t.ok(e))
@@ -194,8 +194,8 @@ t(`File, Blob`, async t => {
 
   t.end()
 })
-t('SourceBuffer')
-t('SourceBufferList')
+t.skip('SourceBuffer')
+t.skip('SourceBufferList')
 t.skip(`MediaSource`, async t => {
   t.plan(ASSERT_N)
 
@@ -210,7 +210,6 @@ t.skip(`MediaSource`, async t => {
 
   t.end()
 })
-
 t.skip(`OffscreenCanvas, bitmaprenderer`, async t => {
   t.plan(ASSERT_N * 2)
 
@@ -287,16 +286,176 @@ t(`WebGLContext`, async t => {
   t.end()
 })
 
-// // buffers
-// t(`Buffer`)
-// t(`ArrayBuffer`)
-// t(`ArrayBufferView`)
-// t(`Uint8Array`)
-// t(`Uint8ClampedArray`)
-// t(`Float32Array`)
-// t(`Float64Array`)
-// t(`Array`)
-// t(`Array of arrays`)
+// buffers
+t(`Buffer`, async t => {
+  t.plan(ASSERT_N + 1)
+
+  var buf = new Buffer(fixture.data)
+  try {
+    await getPixels(new Buffer(fixture.data))
+  } catch (e) {
+    t.ok(e)
+  }
+
+  await testSource(t, buf, {width: fixture.width, height: fixture.height})
+  t.end()
+})
+t(`ArrayBuffer`, async t => {
+  t.plan(ASSERT_N + 1)
+  try {
+    await getPixels(fixture.data.buffer)
+  } catch (e) {
+    t.ok(e)
+  }
+
+  await testSource(t, fixture.data.buffer, {width: fixture.width, height: fixture.height})
+  t.end()
+})
+t(`Uint8Array`, async t => {
+  t.plan(ASSERT_N + 1)
+  try {
+    await getPixels(fixture.data)
+  } catch (e) {
+    t.ok(e)
+  }
+
+  await testSource(t, fixture.data, {width: fixture.width, height: fixture.height})
+  t.end()
+})
+t(`Uint8ClampedArray`, async t => {
+  t.plan(ASSERT_N + 1)
+  try {
+    await getPixels(new Uint8ClampedArray(fixture.data))
+  } catch (e) {
+    t.ok(e)
+  }
+
+  await testSource(t, new Uint8ClampedArray(fixture.data), {width: fixture.width, height: fixture.height})
+  t.end()
+})
+t(`Float32Array`, async t => {
+  t.plan(ASSERT_N + 1)
+
+  var arr = new Float32Array(fixture.data.length)
+  for (let i = 0; i < arr.length; i++) {
+    arr[i] = fixture.data[i] / 255
+  }
+
+  try {
+    await getPixels(arr)
+  } catch (e) {
+    t.ok(e)
+  }
+
+  await testSource(t, arr, {width: fixture.width, height: fixture.height})
+  t.end()
+})
+t(`Float64Array`, async t => {
+  t.plan(ASSERT_N + 1)
+
+  var arr = new Float64Array(fixture.data.length)
+  for (let i = 0; i < arr.length; i++) {
+    arr[i] = fixture.data[i] / 255
+  }
+
+  try {
+    await getPixels(arr)
+  } catch (e) {
+    t.ok(e)
+  }
+
+  await testSource(t, arr, {width: fixture.width, height: fixture.height})
+  t.end()
+})
+t(`Array`, async t => {
+  t.plan(ASSERT_N + 1)
+
+  var arr = Array.from(fixture.data)
+
+  try {
+    await getPixels(arr)
+  } catch (e) {
+    t.ok(e)
+  }
+
+  await testSource(t, arr, {width: fixture.width, height: fixture.height})
+  t.end()
+})
+t(`[[r,g,b,a], [r,g,b,a], ...]`, async t => {
+  t.plan(ASSERT_N + 1)
+
+  // [[r,g,b,a], [r,g,b,a], ...]
+  var arr = Array(fixture.data.length / 4)
+  for (let i = 0; i < arr.length; i++) {
+    arr[i] = [
+      fixture.data[4 * i + 0],
+      fixture.data[4 * i + 1],
+      fixture.data[4 * i + 2],
+      fixture.data[4 * i + 3]
+    ]
+  }
+
+  try {
+    await getPixels(arr)
+  } catch (e) {
+    t.ok(e)
+  }
+
+  await testSource(t, arr, {width: fixture.width, height: fixture.height})
+  t.end()
+})
+t('[[r,g,b,a,r,g,b,a], [r,g,b,a,r,g,b,a], ...]', async t => {
+  t.plan(ASSERT_N + 1)
+
+  // [[r,g,b,a], [r,g,b,a], ...]
+  var arr = []
+  for (let y = 0; y < fixture.height; y++) {
+    var row = []
+    for (let i = 0; i < fixture.width; i++) {
+      row.push(fixture.data[y * fixture.width * 4 + i * 4])
+      row.push(fixture.data[y * fixture.width * 4 + i * 4 + 1])
+      row.push(fixture.data[y * fixture.width * 4 + i * 4 + 2])
+      row.push(fixture.data[y * fixture.width * 4 + i * 4 + 3])
+    }
+    arr.push(row)
+  }
+
+  try {
+    await getPixels(arr)
+  } catch (e) {
+    t.ok(e)
+  }
+
+  await testSource(t, arr, {width: fixture.width, height: fixture.height})
+  t.end()
+})
+t('[[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]], ...]', async t => {
+  t.plan(ASSERT_N + 1)
+
+  // [[r,g,b,a], [r,g,b,a], ...]
+  var arr = []
+  for (let y = 0; y < fixture.height; y++) {
+    var row = []
+    for (let i = 0; i < fixture.width; i++) {
+      row.push([
+        fixture.data[y * fixture.width * 4 + i * 4],
+        fixture.data[y * fixture.width * 4 + i * 4 + 1],
+        fixture.data[y * fixture.width * 4 + i * 4 + 2],
+        fixture.data[y * fixture.width * 4 + i * 4 + 3]
+      ])
+    }
+    arr.push(row)
+  }
+
+  try {
+    await getPixels(arr)
+  } catch (e) {
+    t.ok(e)
+  }
+
+  await testSource(t, arr, {width: fixture.width, height: fixture.height})
+  t.end()
+})
 
 // // decode
 // t('png')
