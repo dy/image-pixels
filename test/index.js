@@ -137,7 +137,6 @@ t(`<image>`, async t => {
 t(`<video>`, async t => {
   t.plan(ASSERT_N)
   let el = document.createElement('div')
-  document.body.appendChild(el)
   el.innerHTML = `<video src="./test/stream_of_water.webm"></video>`
 
   await testSource(t, el.firstChild, null, {
@@ -241,7 +240,6 @@ t(`WebGLContext`, async t => {
   var canvas = document.createElement('canvas')
   canvas.width = fixture.width
   canvas.height = fixture.height
-  document.body.appendChild(canvas)
   var draw = regl({canvas})({
     vert: `
       precision mediump float;
@@ -472,29 +470,33 @@ t('[[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]], ...]', async t => {
 
 // t('multiple sources')
 
-// // get-pixels cases
-// t('get-pixels', function(t) {
-//   getPixels('test/lena.png', function(err, pixels) {
-//     if(err) {
-//       t.assert(false)
-//     } else {
-//       t.equals(pixels.shape.join(','), '512,512,4')
-//     }
-//     t.end()
-//   })
-// })
 
-// t('get-pixels-png', function(t) {
-//   getPixels('test/test_pattern.png', function(err, pixels) {
-//     if(err) {
-//       t.error(err, 'failed to parse png')
-//       t.end()
-//       return
-//     }
-//     test_image(t, pixels)
-//     t.end()
-//   })
-// })
+// get-pixels cases
+function test_image (t, pixels) {
+  t.deepEqual(pixels.data, fixture.data)
+}
+t('get-pixels', function(t) {
+  getPixels('test/lena.png', function(err, pixels) {
+    if(err) {
+      t.fail(err)
+    } else {
+      t.equals([pixels.width, pixels.height].join(','), '512,512')
+    }
+    t.end()
+  })
+})
+
+t('get-pixels-png', function(t) {
+  getPixels('test/test_pattern.png', function(err, pixels) {
+    if(err) {
+      t.error(err, 'failed to parse png')
+      t.end()
+      return
+    }
+    test_image(t, pixels)
+    t.end()
+  })
+})
 
 // /*
 // t('get-pixels-ppm', function(t) {
@@ -510,73 +512,60 @@ t('[[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]], ...]', async t => {
 // })
 // */
 
-// t('get-pixels-jpg', function(t) {
-//   getPixels('test/test_pattern.jpg', function(err, pixels) {
-//     if(err) {
-//       t.error(err, 'failed to parse jpg')
-//       t.end()
-//       return
-//     }
-//     test_image(t, pixels, 4)
-//     t.end()
-//   })
-// })
+t('get-pixels-gif', function(t) {
+  getPixels('test/test_pattern.gif', function(err, pixels) {
+    if(err) {
+      t.error(err, 'failed to parse gif')
+      t.end()
+      return
+    }
+    test_image(t, pixels)
+    t.end()
+  })
+})
 
-// t('get-pixels-gif', function(t) {
-//   getPixels('test/test_pattern.gif', function(err, pixels) {
-//     if(err) {
-//       t.error(err, 'failed to parse gif')
-//       t.end()
-//       return
-//     }
-//     test_image(t, pixels.pick(0))
-//     t.end()
-//   })
-// })
 
-// /*
-// t('get-pixels-bmp', function(t) {
-//   getPixels(path.join(__dirname, 'test_pattern.bmp'), function(err, pixels) {
-//     if(err) {
-//       t.error(err, 'failed to parse bmp')
-//       t.end()
-//       return
-//     }
-//     test_image(t, pixels)
-//     t.end()
-//   })
-// })
-// */
+t('get-pixels-bmp', function(t) {
+  getPixels('test/test_pattern.bmp', function(err, pixels) {
+    if(err) {
+      t.error(err, 'failed to parse bmp')
+      t.end()
+      return
+    }
+    test_image(t, pixels)
+    t.end()
+  })
+})
 
-// t('data url', function(t) {
-//   var url = 'data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7'
-//   getPixels(url, function(err, data) {
-//     if(err) {
-//       console.log(err)
-//       t.error('failed to read data url')
-//       t.end()
-//       return
-//     }
-//     t.ok(true, 'data url opened without crashing')
-//     t.end()
-//   })
-// })
+t('data url', function(t) {
+  var url = 'data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7'
+  getPixels(url, function(err, data) {
+    if(err) {
+      console.log(err)
+      t.error('failed to read data url')
+      t.end()
+      return
+    }
+    t.ok(true, 'data url opened without crashing')
+    t.end()
+  })
+})
 
-// t('get-pixels-buffer', function(t) {
-//   var buffer = fs.readFileSync(__dirname + '/test_pattern.png')
-//   getPixels(buffer, 'image/png', function(err, pixels) {
-//     if(err) {
-//       t.error(err, 'failed to parse buffer')
-//       t.end()
-//       return
-//     }
-//     test_image(t, pixels)
-//     t.end()
-//   })
-// })
+t('get-pixels-buffer', function(t) {
+  var buffer = fs.readFileSync(__dirname + '/test_pattern.png')
+  getPixels(buffer, 'image/png', function(err, pixels) {
+    if(err) {
+      t.error(err, 'failed to parse buffer')
+      t.end()
+      return
+    }
+    test_image(t, pixels)
+    t.end()
+  })
+})
 
 // t('get-url png img', function(t) {
-//   var url = 'https://raw.githubusercontent.com/scijs/get-pixels/master/test/test_pattern.png';
+//   var url = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png';
 //   getPixels(url, function(err, pixels){
 //     if(err) {
 //       console.log('Error:', err);
@@ -590,7 +579,7 @@ t('[[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]], ...]', async t => {
 // });
 
 // t('get-url jpg img', function(t) {
-//   var url = 'https://raw.githubusercontent.com/scijs/get-pixels/master/test/test_pattern.jpg';
+//   var url = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.jpg';
 //   getPixels(url, function(err, pixels){
 //     if(err) {
 //       console.log('Error:', err);
@@ -604,7 +593,7 @@ t('[[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]], ...]', async t => {
 // });
 
 // t('get-url gif img', function(t) {
-//   var url = 'https://raw.githubusercontent.com/scijs/get-pixels/master/test/test_pattern.gif';
+//   var url = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.gif';
 //   getPixels(url, function(err, pixels){
 //     if(err) {
 //       console.log('Error:', err);

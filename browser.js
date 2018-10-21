@@ -9,17 +9,32 @@ var isObj = require('is-plain-obj')
 var isBase64 = require('is-base64')
 var fileType = require('file-type')
 var toab = require('string-to-arraybuffer')
+var tostr = require('arraybuffer-to-string')
 var rect = require('parse-rect')
 var extend = require('object-assign')
 var isBlob = require('is-blob')
 var flat = require('arr-flatten')
 
+module.exports = function (src, o, cb) {
+  // detect callback arg
+  if (typeof o === 'function') {
+    cb = o
+    o = null
+  }
 
-module.exports = getPixelData
+  if (cb) return getPixelData(src, o).then(function (data) {
+    cb(null, data)
+  }, function (err) {
+    cb(err)
+  })
+
+  return getPixelData(src, o)
+}
+
 module.exports.all = require('./lib/all')
 
 
-function getPixelData(src, o) {
+function getPixelData(src, o, cb) {
   // handle arguments
   if (isObj(src)) {
     o = extend(src, o)
@@ -51,7 +66,7 @@ function getPixelData(src, o) {
 
       // raw pixel data
       if (!type) {
-        return readPixelData(buf)
+        return Promise.resolve(readPixelData(buf))
       }
 
       // encoded image data - fall back to default url
@@ -200,6 +215,25 @@ function getPixelData(src, o) {
     // FIXME: for clipping case that might be faster to copy just a slice of pixels
     // FIXME: or even better - ignore drawing pixels to canvas and just pick them directly
     if (img instanceof Uint8Array || img instanceof Uint8ClampedArray) {
+      // decode encoded data
+      captureMime(img)
+      if (type) {
+        var src = img
+        return new Promise(function (ok, nok) {
+          var img = new Image()
+          img.crossOrigin = 'Anonymous'
+          img.onload = function() {
+            captureShape(img)
+            ok(readPixelData(img))
+          }
+          img.onerror = function(err) {
+            nok(err)
+          }
+          img.src = ['data:' + type, 'base64,' + tostr(src, 'base64')].join(';')
+        })
+      }
+
+      // raw data
       if (!width || !height) throw new Error('Raw data requires options.width and options.height')
       var rawData = context.createImageData(width, height)
       for (var i = 0; i < img.length; i++) {
@@ -233,7 +267,11 @@ function getPixelData(src, o) {
     if (!type) {
       type = fileType(buf)
       type = type && type.mime
+
+      return true
     }
+
+    return false
   }
 }
 

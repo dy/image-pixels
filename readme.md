@@ -68,6 +68,13 @@ Option | Meaning
 var {data, width, height} = pixels
 ```
 
+Old callback style syntax is also supported:
+
+```js
+getPixels(img, function (err, {data, width, height}) {})
+```
+
+
 ### `list|dict = await pixelData.all(list|dict)`
 
 Load multiple sources or dict of sources in parallel.
