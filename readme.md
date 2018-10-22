@@ -32,14 +32,14 @@ Loads pixel data from a `source` based on options. Possibly provide a callback f
 Type | Meaning
 ---|---
 `url`, `path` | Relative/absolute path in node resolves to a file.
-`data-uri`, `base64` | String with encoded or raw pixel data. Raw data requires `width` and `height` options.
+`data-uri`, `base64` | String with encoded or raw pixel data. Raw data requires `options.shape`. Encoded data may require `options.type` to skip mime type detection.
 `HTMLImageElement`, `SVGImageElement`, `HTMLVideoElement`, `CSSImageValue` | DOM/SVG image elements.
 `Image`, `ImageData`, `ImageBitmap` | Browser image data containers.
 `File`, `Blob` | Encoded image or raw pixel data.
 `Canvas`, `Context2D` | 2D drawing context, browser-only.
 `WebGLContext` | GL context, node/browser.
-`Buffer`, `ArrayBuffer`, `Uint8Array`, `Uint8ClampedArray` | Raw/encoded pixel data.
-`Float32Array`, `Float64Array`, `Array`, `Array` of arrays | Float pixel data.
+`Buffer`, `ArrayBuffer`, `Uint8Array`, `Uint8ClampedArray` | Raw or encoded pixel data. Raw data requires `options.shape`. For encoded data `options.type` can be provided in order to skip mime type detection.
+`Float32Array`, `Float64Array`, `Array`, `Array` of arrays | Float pixel data with values from `0..1` range.
 `Promise` | Promise expecting resolution to an image source.
 `ndarray` | Ndarray container with pixel data, compatible with [get-pixels](https://ghub.io/get-pixels).
 regl [pending] |
@@ -48,12 +48,12 @@ regl [pending] |
 `Bitmaprenderer` [pending] |
 options object | If `source` argument is omitted, it is taken from `options.source`, useful for `pixelData.all`.
 
-#### `option`
+#### `options`
 
 Option | Meaning
 ---|---
 `source` | Source data, one from the list above.
-`shape` | Input data shape `[width, height]`, required for raw data.
+`shape`, `width`, `height` | Input data shape `[width, height]`, required for raw data. Alternately, `width` or `height` properties may be provided.
 `type` | Mime type, optional for raw data.
 `cache` | Save URL for faster later fetching.
 `clip` | Clipping rectangle, `[left, top, right, bottom]` or `{x?, y?, width?, height?}`.
