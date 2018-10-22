@@ -1,4 +1,4 @@
-'use strict'
+
 
 var ndarray       = require('ndarray')
 var path          = require('path')

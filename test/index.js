@@ -20,8 +20,10 @@ var clipFix = {
   width: 2,
   height: 2
 }
-var pngFixData = drawToCanvas(fixture).toDataURL('image/png')
-var jpgFixData = drawToCanvas(fixture).toDataURL('image/jpeg', 1)
+var pngFixDataURL = drawToCanvas(fixture).toDataURL('image/png')
+var jpgFixDataURL = drawToCanvas(fixture).toDataURL('image/jpeg', 1)
+var pngFixData = s2ab(pngFixDataURL)
+var pngFixURL = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png'
 
 const ASSERT_N = 10
 
@@ -77,29 +79,32 @@ t('some path', async t => {
   t.end()
 })
 t.skip('not existing path')
-// t('https', t => {
-//   await testSource(t, 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
-//   t.end()
-// })
-// t('http', t => {
-//   await testSource(t, 'http://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
-//   t.end()
-// })
-// t('default URL', t => {
-//   await testSource(t, '//raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png')
-//   t.end()
-// })
+t('https', async t => {
+  t.plan(ASSERT_N)
+  await testSource(t, pngFixURL)
+  t.end()
+})
+t('http', async t => {
+  t.plan(ASSERT_N)
+  await testSource(t, pngFixURL.replace('https', 'http'))
+  t.end()
+})
+t('default URL', async t => {
+  t.plan(ASSERT_N)
+  await testSource(t, pngFixURL.replace('https:', ''))
+  t.end()
+})
 t.skip('not existing url')
 t.skip('not an image url')
 t('data URL', async t => {
   t.plan(2 * ASSERT_N)
-  await testSource(t, pngFixData)
-  await testSource(t, jpgFixData)
+  await testSource(t, pngFixDataURL)
+  await testSource(t, jpgFixDataURL)
   t.end()
 })
 t('base64', async t => {
   t.plan(ASSERT_N)
-  await testSource(t, pngFixData.replace(/^data:image\/(png|jpg);base64,/, ''))
+  await testSource(t, pngFixDataURL.replace(/^data:image\/(png|jpg);base64,/, ''))
   t.end()
 })
 t('raw pixels base64', async t => {
@@ -188,8 +193,16 @@ t(`ImageBitmap`, async t => {
 t(`File, Blob`, async t => {
   t.plan(ASSERT_N * 2)
 
-  await testSource(t, new File([s2ab(pngFixData)], 'file.png'))
-  await testSource(t, new Blob([s2ab(pngFixData)]))
+  await testSource(t, new File([pngFixData], 'file.png'))
+  await testSource(t, new Blob([pngFixData]))
+
+  t.end()
+})
+t.skip(`File, Blob raw`, async t => {
+  t.plan(ASSERT_N * 2)
+
+  await testSource(t, new File([fixture.data], 'file.png'))
+  await testSource(t, new Blob([fixture.data]))
 
   t.end()
 })
@@ -318,6 +331,11 @@ t(`Uint8Array`, async t => {
   }
 
   await testSource(t, fixture.data, {width: fixture.width, height: fixture.height})
+  t.end()
+})
+t(`Uint8Array encoded`, async t => {
+  t.plan(ASSERT_N)
+  await testSource(t, new Uint8Array(pngFixData))
   t.end()
 })
 t(`Uint8ClampedArray`, async t => {
@@ -461,14 +479,19 @@ t('[[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]], ...]', async t => {
 // t('gif')
 // t('bmp')
 
-// // others
-// t(`options direct`)
+// others
+t(`options directly`, async t => {
+  t.plan(ASSERT_N)
+  await testSource(t, {source: pngFixURL})
+  t.end()
+})
 // t(`ndarray`)
 // t('regl')
 // t('gl- components')
 // t('null')
 
 // t('multiple sources')
+
 
 
 // get-pixels cases
@@ -498,19 +521,17 @@ t('get-pixels-png', function(t) {
   })
 })
 
-// /*
-// t('get-pixels-ppm', function(t) {
-//   getPixels(path.join(__dirname, 'test_pattern.ppm'), function(err, pixels) {
-//     if(err) {
-//       t.error(err, 'failed to parse ppm')
-//       t.end()
-//       return
-//     }
-//     test_image(t, pixels)
-//     t.end()
-//   })
-// })
-// */
+t.skip('get-pixels-ppm', function(t) {
+  getPixels(path.join(__dirname, 'test_pattern.ppm'), function(err, pixels) {
+    if(err) {
+      t.error(err, 'failed to parse ppm')
+      t.end()
+      return
+    }
+    test_image(t, pixels)
+    t.end()
+  })
+})
 
 t('get-pixels-gif', function(t) {
   getPixels('test/test_pattern.gif', function(err, pixels) {
@@ -523,7 +544,6 @@ t('get-pixels-gif', function(t) {
     t.end()
   })
 })
-
 
 t('get-pixels-bmp', function(t) {
   getPixels('test/test_pattern.bmp', function(err, pixels) {
@@ -564,47 +584,33 @@ t('get-pixels-buffer', function(t) {
   })
 })
 
-// t('get-url png img', function(t) {
-//   var url = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png';
-//   getPixels(url, function(err, pixels){
-//     if(err) {
-//       console.log('Error:', err);
-//       t.error(err, 'failed to read web image data');
-//       t.end();
-//       return;
-//     }
-//     test_image(t, pixels);
-//     t.end();
-//   });
-// });
+t('get-url png img', function(t) {
+  var url = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png';
+  getPixels(url, function(err, pixels){
+    if(err) {
+      console.log('Error:', err);
+      t.error(err, 'failed to read web image data');
+      t.end();
+      return;
+    }
+    test_image(t, pixels);
+    t.end();
+  });
+});
 
-// t('get-url jpg img', function(t) {
-//   var url = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.jpg';
-//   getPixels(url, function(err, pixels){
-//     if(err) {
-//       console.log('Error:', err);
-//       t.error(err, 'failed to read web image data');
-//       t.end();
-//       return;
-//     }
-//     test_image(t, pixels);
-//     t.end();
-//   });
-// });
-
-// t('get-url gif img', function(t) {
-//   var url = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.gif';
-//   getPixels(url, function(err, pixels){
-//     if(err) {
-//       console.log('Error:', err);
-//       t.error(err, 'failed to read web image data');
-//       t.end();
-//       return;
-//     }
-//     test_image(t, pixels.pick(0));
-//     t.end();
-//   });
-// });
+t('get-url gif img', function(t) {
+  var url = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.gif';
+  getPixels(url, function(err, pixels){
+    if(err) {
+      console.log('Error:', err);
+      t.error(err, 'failed to read web image data');
+      t.end();
+      return;
+    }
+    test_image(t, pixels);
+    t.end();
+  });
+});
 
 
 //draw buffer on the canvas

@@ -35,17 +35,19 @@ Type | Meaning
 `data-uri`, `base64` | String with encoded or raw pixel data. Raw data requires `options.shape`. Encoded data may require `options.type` to skip mime type detection.
 `HTMLImageElement`, `SVGImageElement`, `HTMLVideoElement`, `CSSImageValue` | DOM/SVG image elements.
 `Image`, `ImageData`, `ImageBitmap` | Browser image data containers.
-`File`, `Blob` | Encoded image or raw pixel data.
+`File`, `Blob` | Encoded image data.
 `Canvas`, `Context2D` | 2D drawing context, browser-only.
 `WebGLContext` | GL context, node/browser.
 `Buffer`, `ArrayBuffer`, `Uint8Array`, `Uint8ClampedArray` | Raw or encoded pixel data. Raw data requires `options.shape`. For encoded data `options.type` can be provided in order to skip mime type detection.
 `Float32Array`, `Float64Array`, `Array`, `Array` of arrays | Float pixel data with values from `0..1` range.
 `Promise` | Promise expecting resolution to an image source.
 `ndarray` | Ndarray container with pixel data, compatible with [get-pixels](https://ghub.io/get-pixels).
-regl [pending] |
-`MediaSource` [pending] |
-`OffscreenCanvas` [pending] |
-`Bitmaprenderer` [pending] |
+regl | [TODO]
+`FileList` | [TODO]
+`MediaSource` | [TODO]
+`OffscreenCanvas` | [TODO]
+`Bitmaprenderer` | [TODO]
+`SourceBuffer`, `SourceBufferList` | [TODO]
 options object | If `source` argument is omitted, it is taken from `options.source`, useful for `pixelData.all`.
 
 #### `options`
@@ -53,13 +55,12 @@ options object | If `source` argument is omitted, it is taken from `options.sour
 Option | Meaning
 ---|---
 `source` | Source data, one from the list above.
-`shape`, `width`, `height` | Input data shape `[width, height]`, required for raw data. Alternately, `width` or `height` properties may be provided.
-`type` | Mime type, optional for raw data.
-`cache` | Save URL for faster later fetching.
+`shape` | Input data shape `[width, height]`, required for raw data. Alternately, `width` or `height` properties may be provided.
+`type`/`mime` | Mime type, optional for raw data.
 `clip` | Clipping rectangle, `[left, top, right, bottom]` or `{x?, y?, width?, height?}`.
+`cache` | Save source for faster later fetching.
 <!-- `time` | A frame # to read for animated image formats. -->
 <!-- `worker` | Delegate computation to worker, if available. Does not block main thread. -->
-
 
 ### `list|dict = await pixelData.all(list|dict)`
 
@@ -74,6 +75,15 @@ var dict = await pixelData({
 	c: {source: atlas, clip: [0,10,10,10]}
 )
 ```
+
+#### Supported formats
+
+In browser any format suported by `<img>` is available.
+In node, the following formats are available:
+
+* `PNG`
+* `JPEG`
+* `GIF`
 
 ## Related
 

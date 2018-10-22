@@ -1,10 +1,5 @@
-'use strict'
 
 
-// var extname = require('get-ext')
-// var GifReader = require('omggif').GifReader
-
-var isPromise = require('is-promise')
 var isObj = require('is-plain-obj')
 var isBase64 = require('is-base64')
 var fileType = require('file-type')
@@ -19,7 +14,7 @@ module.exports = function (src, o, cb) {
   // detect callback arg
   if (typeof o === 'function') {
     cb = o
-    o = null
+    o = isObj(src) ? src : null
   }
 
   if (cb) return getPixelData(src, o).then(function (data) {
@@ -34,10 +29,11 @@ module.exports = function (src, o, cb) {
 module.exports.all = require('./lib/all')
 
 
-function getPixelData(src, o, cb) {
+function getPixelData(src, o) {
   // handle arguments
   if (isObj(src)) {
     o = extend(src, o)
+    src = o.source || o.src
   }
   if (typeof o === 'string') o = {type: o}
   else if (!o) o = {}
@@ -54,12 +50,14 @@ function getPixelData(src, o, cb) {
   if (isBlob(src) || (src instanceof File)) {
     // FIXME: try to use createImageBitmap for Blob
     src = URL.createObjectURL(src)
+
+    // TODO: detect raw data
   }
 
   // handle source type
   if (typeof src === 'string') {
     // convert base64 to datauri
-    if (isBase64(src) && !/^data\:/i.test(src)) {
+    if (isBase64(src) && !/^data:/i.test(src)) {
       var buf = new Uint8Array(toab(src))
 
       captureMime(buf)
