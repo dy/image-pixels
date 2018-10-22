@@ -198,15 +198,15 @@ function getPixels(src, o, cb) {
       src = buf
     }
 
+    // retrieve canvas from contexts
+    var ctx = src._gl || src.gl || src.context || src.ctx
+    src = ctx && ctx.canvas || src.canvas || src
+
+    captureShape(src)
     // retrieve buffer from buffer containers
     src = src.data || src.buffer || src._data || src
     captureShape(src)
     captureMime(src)
-
-    // retrieve canvas from contexts
-    var ctx = src.gl || src.context || src.ctx
-    src = ctx && ctx.canvas || src.canvas || src
-    captureShape(src)
 
     return readPixelData(src)
   })

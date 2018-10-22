@@ -12,7 +12,7 @@ var x = require('object-assign')
 var regl = require('regl')
 var a = require('assert')
 var getNdPixels = require('get-pixels')
-var online = require('is-online')
+var isOnline = require('is-online')
 
 var clipFix = {
   data: [
@@ -30,56 +30,65 @@ var pngFixURL = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test
 const ASSERT_N = 17
 
 
-async function testSource(assert, arg, o, fix=fixture) {
+async function testSource(t, arg, o, fix=fixture) {
   // direct
-  let to = setTimeout(function () {assert.fail('Direct timeout')}, 1000)
+  let to = setTimeout(function () {t.fail('Direct timeout')}, 1000)
   let data = await getPixels(arg, o)
   clearTimeout(to)
 
-  assert.equal(data.width, fix.width)
-  assert.equal(data.height, fix.height)
+  t.equal(data.width, fix.width)
+  t.equal(data.height, fix.height)
   fix.data ?
-  assert.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Ok async pixels') :
-  assert.ok(data.data[0], 'Ok async pixels')
+  t.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Ok async pixels') :
+  t.ok(data.data[0], 'Ok async pixels')
 
   // second time (cache)
-  to = setTimeout(function () {assert.fail('Direct second timeout')}, 1000)
+  to = setTimeout(function () {t.fail('Direct second timeout')}, 1000)
   let data2 = await getPixels(arg, o)
   clearTimeout(to)
-  assert.deepEqual(data.data, data2.data)
-  assert.equal(data2.width, fix.width)
-  assert.equal(data2.height, fix.height)
-  fix.data ? assert.equal(match(data2.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Ok async pixels twice') :
-  assert.ok(data2.data[0], 'Ok async pixels twice')
+  t.deepEqual(data.data, data2.data)
+  t.equal(data2.width, fix.width)
+  t.equal(data2.height, fix.height)
+  fix.data ? t.equal(match(data2.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Ok async pixels twice') :
+  t.ok(data2.data[0], 'Ok async pixels twice')
 
   // clip
-  to = setTimeout(function () {assert.fail('Clip timeout')}, 1000)
+  to = setTimeout(function () {t.fail('Clip timeout')}, 1000)
   let clip = await getPixels(arg, x({clip: [1,1,3,3]}, o))
   clearTimeout(to)
 
-  assert.equal(clip.width, 2)
-  assert.equal(clip.height, 2)
+  t.equal(clip.width, 2)
+  t.equal(clip.height, 2)
   fix.data ?
-  assert.equal(match(clip.data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'Ok clip pixels') :
-  assert.ok(clip.data[0], 'Ok clip pixels')
+  t.equal(match(clip.data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'Ok clip pixels') :
+  t.ok(clip.data[0], 'Ok clip pixels')
 
   // alltogether
+  to = setTimeout(function () {t.fail('All timeout')}, 1000)
   var list = await getPixels.all([
     o,
     x({clip: [1,1,3,3]}, o)
   ], {source: arg})
+  clearTimeout(to)
 
-  assert.deepEqual(data.data, list[0].data, 'Ok all pixels data')
-  assert.equal(list[0].width, fix.width)
-  assert.equal(list[0].height, fix.height)
-  fix.data ? assert.equal(match(list[0].data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Ok all pixels') :
-  assert.ok(list[0].data[0], 'Ok all pixels')
+  t.deepEqual(data.data, list[0].data, 'Ok all pixels data')
+  t.equal(list[0].width, fix.width)
+  t.equal(list[0].height, fix.height)
+  fix.data ? t.equal(match(list[0].data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Ok all pixels') :
+  t.ok(list[0].data[0], 'Ok all pixels')
 
-  assert.equal(list[1].width, 2)
-  assert.equal(list[1].height, 2)
+  t.equal(list[1].width, 2)
+  t.equal(list[1].height, 2)
   fix.data ?
-  assert.equal(match(list[1].data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'Ok clip pixels') :
-  assert.ok(list[1].data[0], 'Ok all clip pixels')
+  t.equal(match(list[1].data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'Ok clip pixels') :
+  t.ok(list[1].data[0], 'Ok all clip pixels')
+}
+
+async function online () {
+  if (isOnline.call) {
+    isOnline = await isOnline()
+  }
+  return isOnline
 }
 
 
@@ -265,25 +274,23 @@ t.skip(`OffscreenCanvas, bitmaprenderer`, async t => {
 
   one.transferImageBitmap(bm);
 })
-t(`Context2D`, async t => {
-  t.plan(ASSERT_N)
+t(`Canvas/Context2D`, async t => {
+  t.plan(ASSERT_N * 2)
+  var canvas = drawToCanvas(fixture)
+  await testSource(t, canvas)
+
   var canvas = drawToCanvas(fixture)
   await testSource(t, canvas.getContext('2d'))
   t.end()
 })
-t(`Canvas`, async t => {
-  t.plan(ASSERT_N)
-  var canvas = drawToCanvas(fixture)
-  await testSource(t, canvas)
-  t.end()
-})
-t(`WebGLContext`, async t => {
-  t.plan(ASSERT_N)
+t(`Canvas/WebGLContext`, async t => {
+  t.plan(ASSERT_N * 3)
 
   var canvas = document.createElement('canvas')
   canvas.width = fixture.width
   canvas.height = fixture.height
-  var draw = regl({canvas})({
+  var _regl = regl({canvas})
+  var draw = _regl({
     vert: `
       precision mediump float;
       attribute vec2 position;
@@ -323,6 +330,8 @@ t(`WebGLContext`, async t => {
   draw()
 
   await testSource(t, canvas)
+  await testSource(t, canvas.getContext('webgl'))
+  await testSource(t, _regl)
 
   t.end()
 })
@@ -512,31 +521,37 @@ t('[[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]], ...]', async t => {
 // cases
 t(`options directly`, async t => {
   t.plan(ASSERT_N)
-  await testSource(t, {source: pngFixURL})
+  await testSource(t, {source: pngFixDataURL})
   t.end()
 })
 t(`ndarray`, async t => {
   t.plan(ASSERT_N)
 
-  getNdPixels(pngFixURL, async (e, px) => {
+  getNdPixels(pngFixDataURL, async (e, px) => {
     await testSource(t, px)
     t.end()
   })
 })
-t.skip(`.all`, async t => {
-  // different sources
+t.skip(`multiple sources`, async t => {
+  // different sources list
+
+  // different source dict
+
   t.end()
 })
-t('changed uncached version')
-
-// TODO: bad error cases
+t('changed URL contents')
+t('timeout')
+t('bad path')
+t('not existing URL')
+t('bad URL data')
+t('malformed encoded buffer')
 
 
 // get-pixels cases
 function test_image (t, pixels) {
   t.deepEqual(pixels.data, fixture.data)
 }
-t('get-pixels', function(t) {
+t('get-pixels', async function(t) {
   getPixels('test/lena.png', function(err, pixels) {
     if(err) {
       t.fail(err)
@@ -547,7 +562,7 @@ t('get-pixels', function(t) {
   })
 })
 
-t('get-pixels-png', function(t) {
+t('get-pixels-png', async function(t) {
   getPixels('test/test_pattern.png', function(err, pixels) {
     if(err) {
       t.error(err, 'failed to parse png')
@@ -559,7 +574,7 @@ t('get-pixels-png', function(t) {
   })
 })
 
-t.skip('get-pixels-ppm', function(t) {
+t.skip('get-pixels-ppm', async function(t) {
   getPixels(path.join(__dirname, 'test_pattern.ppm'), function(err, pixels) {
     if(err) {
       t.error(err, 'failed to parse ppm')
@@ -571,7 +586,7 @@ t.skip('get-pixels-ppm', function(t) {
   })
 })
 
-t('get-pixels-gif', function(t) {
+t('get-pixels-gif', async function(t) {
   getPixels('test/test_pattern.gif', function(err, pixels) {
     if(err) {
       t.error(err, 'failed to parse gif')
@@ -583,7 +598,7 @@ t('get-pixels-gif', function(t) {
   })
 })
 
-t('get-pixels-bmp', function(t) {
+t('get-pixels-bmp', async function(t) {
   getPixels('test/test_pattern.bmp', function(err, pixels) {
     if(err) {
       t.error(err, 'failed to parse bmp')
@@ -595,7 +610,7 @@ t('get-pixels-bmp', function(t) {
   })
 })
 
-t('data url', function(t) {
+t('data url', async function(t) {
   var url = 'data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7'
   getPixels(url, function(err, data) {
     if(err) {
@@ -609,7 +624,7 @@ t('data url', function(t) {
   })
 })
 
-t('get-pixels-buffer', function(t) {
+t('get-pixels-buffer', async function(t) {
   var buffer = fs.readFileSync(__dirname + '/test_pattern.png')
   getPixels(buffer, 'image/png', function(err, pixels) {
     if(err) {
@@ -622,7 +637,9 @@ t('get-pixels-buffer', function(t) {
   })
 })
 
-t('get-url png img', function(t) {
+t('get-url png img', async function(t) {
+  if (!(await online())) return t.end()
+
   var url = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png';
   getPixels(url, function(err, pixels){
     if(err) {
@@ -636,7 +653,9 @@ t('get-url png img', function(t) {
   });
 });
 
-t('get-url gif img', function(t) {
+t('get-url gif img', async function(t) {
+  if (!(await online())) return t.end()
+
   var url = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.gif';
   getPixels(url, function(err, pixels){
     if(err) {
