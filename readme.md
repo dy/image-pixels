@@ -21,30 +21,32 @@ var [a, b, c] = await pixelData.all([
 ])
 ```
 
+## API
+
 ### `{data, width, height} = await pixelData(source, options?, cb?)`
 
 Loads pixel data from a `source` based on options. Possibly provide a callback for old-style async calls. Function returns a promise that gets resolved once the source is ready, therefore it is predisposed for await call.
 
 #### `source`
 
-* `path`, `url`
-* `data-uri`, `base64` strings
-* `<img>`, `<image>`, `<video>`, `<canvas>`
-* `HTMLImageElement`, `SVGImageElement`, `HTMLVideoElement`, `CSSImageValue`
-* `Image`, `ImageData`, `ImageBitmap`
-* `File`, `Blob`
-* `MediaSource` [pending]
-* `OffscreenCanvas` [pending]
-* `Canvas`
-* `Context2D`
-* `WebGLContext`
-* `Buffer`, `ArrayBuffer`, `ArrayBufferView`
-* `Uint8Array`, `Uint8ClampedArray`
-* `Float32Array`, `Float64Array`, `Array`, `Array` of arrays
-* `ndarray`
-* `Promise`
-* regl, gl- components and other
-* options object
+Type | Meaning
+---|---
+`url`, `path` | Relative/absolute path in node resolves to a file.
+`data-uri`, `base64` | String with encoded or raw pixel data. Raw data requires `width` and `height` options.
+`HTMLImageElement`, `SVGImageElement`, `HTMLVideoElement`, `CSSImageValue` | DOM/SVG image elements.
+`Image`, `ImageData`, `ImageBitmap` | Browser image data containers.
+`File`, `Blob` | Encoded image or raw pixel data.
+`Canvas`, `Context2D` | 2D drawing context, browser-only.
+`WebGLContext` | GL context, node/browser.
+`Buffer`, `ArrayBuffer`, `Uint8Array`, `Uint8ClampedArray` | Raw/encoded pixel data.
+`Float32Array`, `Float64Array`, `Array`, `Array` of arrays | Float pixel data.
+`Promise` | Promise expecting resolution to an image source.
+`ndarray` | Ndarray container with pixel data, compatible with [get-pixels](https://ghub.io/get-pixels).
+regl [pending] |
+`MediaSource` [pending] |
+`OffscreenCanvas` [pending] |
+`Bitmaprenderer` [pending] |
+options object | If `source` argument is omitted, it is taken from `options.source`, useful for `pixelData.all`.
 
 #### `option`
 
@@ -75,9 +77,9 @@ var dict = await pixelData({
 
 ## Related
 
-* [get-pixels](https://ghub.io/get-pixels) − get ndarray with pixel data.
-* [get-image-pixels](https://ghub.io/get-image-pixels) − get pixel data for Canvas/Image/Video.
-* [get-image-data](https://ghub.io/get-image-data) − get image data for Canvas/Image/Video, browser-only.
+* [get-pixels](https://ghub.io/get-pixels) − get ndarray with pixel data, limited set of sources.
+* [get-image-pixels](https://ghub.io/get-image-pixels) − get pixel data for Canvas/Image/Video elements, browser-only.
+* [get-image-data](https://ghub.io/get-image-data) − get image data for Canvas/Image/Video elements, browser-only.
 * [image-equal](https://ghub.io/image-equal) − assert image with baseline.
 
 ## License
