@@ -1,4 +1,4 @@
-
+'use strict'
 
 var isObj = require('is-plain-obj')
 var isBase64 = require('is-base64')
@@ -9,39 +9,91 @@ var rect = require('parse-rect')
 var extend = require('object-assign')
 var isBlob = require('is-blob')
 var flat = require('arr-flatten')
+var p = require('primitive-pool')
+var WeakMap = require('es6-weak-map')
 
-module.exports = function (src, o, cb) {
+
+module.exports = getPixels
+module.exports.get = getPixels
+module.exports.all = getPixelsAll
+
+
+function getPixelsAll (src, o, cb) {
+  if (!src) return null
+
+  if (typeof o === 'function') {
+    cb = o
+    o = null
+  }
+
+  // list
+  if (Array.isArray(src)) {
+    var list = src.map(function (source) {
+      return getPixels(source, o)
+    })
+
+    // return promise resolved with list
+    return Promise.all(list).then(function (list) {
+      cb && cb(null, list)
+      return list
+    }, function (err) {
+      cb && cb(err)
+    })
+  }
+
+  // dict
+  var handlers = {}
+  var list = []
+  for (var name in src) {
+    list.push(handlers[name] = getPixels(src[name], o))
+  }
+
+  // return promise resolved with dict
+  return Promise.all(list).then(function () {
+    cb && cb(null, handlers)
+    return handlers
+  }, function (err) {
+    cb && cb(err)
+  })
+}
+
+
+
+// cache of data depending on source
+var cache = new WeakMap()
+
+
+function getPixels(src, o, cb) {
   // detect callback arg
   if (typeof o === 'function') {
     cb = o
     o = isObj(src) ? src : null
   }
 
-  if (cb) return getPixelData(src, o).then(function (data) {
+  // intercept callback call
+  if (cb) return getPixels(src, o).then(function (data) {
     cb(null, data)
+    return data
   }, function (err) {
     cb(err)
   })
 
-  return getPixelData(src, o)
-}
-
-module.exports.all = require('./lib/all')
-
-
-function getPixelData(src, o) {
   // handle arguments
-  if (isObj(src)) {
-    o = extend(src, o)
-    src = o.source || o.src
-  }
+  if (!src) src = {}
   if (typeof o === 'string') o = {type: o}
   else if (!o) o = {}
   else if (Array.isArray(o)) o = {shape: o}
+  if (isObj(src)) {
+    o = extend(src, o)
+    src = o.source || o.src
+
+    // nested source
+    if (isObj(src)) src = src.source || src.src || src
+  }
 
   // detect clipping
   var width, height
-  var clip = o.clip && rect(o.clip) || {x:0, y: 0}
+  var clip = o.clip && rect(o.clip) || {x: 0, y: 0}
   var type = o.type || o.mime
   captureShape(o)
   captureShape(src)
@@ -52,6 +104,12 @@ function getPixelData(src, o) {
     src = URL.createObjectURL(src)
 
     // TODO: detect raw data
+  }
+
+  // get cached instance
+  if (cache.has(p(src))) {
+    // FIXME: handle clipping
+    return Promise.resolve(cache.get(p(src)))
   }
 
   // handle source type
@@ -134,7 +192,7 @@ function getPixelData(src, o) {
     // float data → uint data
     if ((src instanceof Float32Array) || (src instanceof Float64Array)) {
       var buf = new Uint8Array(src.length)
-      for (let i = 0; i < src.length; i++) {
+      for (var i = 0; i < src.length; i++) {
         buf[i] = src[i] * 255
       }
       src = buf

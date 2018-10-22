@@ -1,20 +1,20 @@
-# get-pixel-data [![Build Status](https://travis-ci.org/dy/get-pixel-data.svg?branch=master)](https://travis-ci.org/dy/get-pixel-data) [![unstable](https://img.shields.io/badge/stability-unstable-green.svg)](http://github.com/badges/stability-badges)
+# image-pixels [![Build Status](https://travis-ci.org/dy/image-pixels.svg?branch=master)](https://travis-ci.org/dy/image-pixels) [![unstable](https://img.shields.io/badge/stability-unstable-green.svg)](http://github.com/badges/stability-badges)
 
 Get pixel data for a given URL, path, buffer, canvas, image or any other source. Intented for image based tests, first of all.
 
 
 ## Usage
 
-[![$ npm install get-pixel-data](http://nodei.co/npm/get-pixel-data.png?mini=true)](http://npmjs.org/package/get-pixel-data)
+[![$ npm install image-pixels](http://nodei.co/npm/image-pixels.png?mini=true)](http://npmjs.org/package/image-pixels)
 
 ```javascript
-var pixelData = require('get-pixel-data')
+var pixels = require('image-pixels')
 
 // load single source
-var {data, width, height} = await pixelData('lena.png')
+var {data, width, height} = await pixels('lena.png')
 
 // load multiple sources in parallel
-var [a, b, c] = await pixelData.all([
+var [a, b, c] = await pixels.all([
 	'./a.jpg',
 	{ source: './b.png', cache: false },
 	canvas
@@ -23,7 +23,7 @@ var [a, b, c] = await pixelData.all([
 
 ## API
 
-### `{data, width, height} = await pixelData(source, options?, cb?)`
+### `{data, width, height} = await pixels(source, options?, cb?)`
 
 Loads pixel data from a `source` based on options. Possibly provide a callback for old-style async calls. Function returns a promise that gets resolved once the source is ready, therefore it is predisposed for await call.
 
@@ -41,14 +41,13 @@ Type | Meaning
 `Buffer`, `ArrayBuffer`, `Uint8Array`, `Uint8ClampedArray` | Raw or encoded pixel data. Raw data requires `options.shape`. For encoded data `options.type` can be provided in order to skip mime type detection.
 `Float32Array`, `Float64Array`, `Array`, `Array` of arrays | Float pixel data with values from `0..1` range.
 `Promise` | Promise expecting resolution to an image source.
-`ndarray` | Ndarray container with pixel data, compatible with [get-pixels](https://ghub.io/get-pixels).
-regl | [TODO]
+`ndarray` | [Ndarray](https://ghub.io/ndarray) container with pixel data, compatible with [get-pixels](https://ghub.io/get-pixels).
 `FileList` | [TODO]
 `MediaSource` | [TODO]
 `OffscreenCanvas` | [TODO]
 `Bitmaprenderer` | [TODO]
 `SourceBuffer`, `SourceBufferList` | [TODO]
-options object | If `source` argument is omitted, it is taken from `options.source`, useful for `pixelData.all`.
+options object | If `source` argument is omitted, it is taken from `options.source`, useful for `pixels.all`.
 
 #### `options`
 
@@ -62,18 +61,18 @@ Option | Meaning
 <!-- `time` | A frame # to read for animated image formats. -->
 <!-- `worker` | Delegate computation to worker, if available. Does not block main thread. -->
 
-### `list|dict = await pixelData.all(list|dict)`
+### `list|dict = await pixels.all(list|dict, options?, cb?)`
 
-Load multiple sources or dict of sources in parallel.
+Load multiple sources or dict of sources in parallel. `options` can provide common for every source options.
 
 ```js
 // load font atlas sprite dict
 var atlas = require('font-atlas')(chars: 'abc', step: [10, 10], shape: [20, 20])
-var dict = await pixelData({
-	a: {source: atlas, clip: [0,0,10,10]},
-	b: {source: atlas, clip: [10,0,10,10]},
-	c: {source: atlas, clip: [0,10,10,10]}
-)
+var dict = await pixels({
+	a: {clip: [0,0,10,10]},
+	b: {clip: [10,0,10,10]},
+	c: {clip: [0,10,10,10]}
+}, {cache: true, source: atlas})
 ```
 
 #### Supported formats

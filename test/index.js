@@ -11,6 +11,8 @@ var ab2s = require('arraybuffer-to-string')
 var x = require('object-assign')
 var regl = require('regl')
 var a = require('assert')
+var getNdPixels = require('get-pixels')
+var online = require('is-online')
 
 var clipFix = {
   data: [
@@ -25,7 +27,8 @@ var jpgFixDataURL = drawToCanvas(fixture).toDataURL('image/jpeg', 1)
 var pngFixData = s2ab(pngFixDataURL)
 var pngFixURL = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png'
 
-const ASSERT_N = 10
+const ASSERT_N = 17
+
 
 async function testSource(assert, arg, o, fix=fixture) {
   // direct
@@ -59,6 +62,24 @@ async function testSource(assert, arg, o, fix=fixture) {
   fix.data ?
   assert.equal(match(clip.data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'Ok clip pixels') :
   assert.ok(clip.data[0], 'Ok clip pixels')
+
+  // alltogether
+  var list = await getPixels.all([
+    o,
+    x({clip: [1,1,3,3]}, o)
+  ], {source: arg})
+
+  assert.deepEqual(data.data, list[0].data, 'Ok all pixels data')
+  assert.equal(list[0].width, fix.width)
+  assert.equal(list[0].height, fix.height)
+  fix.data ? assert.equal(match(list[0].data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Ok all pixels') :
+  assert.ok(list[0].data[0], 'Ok all pixels')
+
+  assert.equal(list[1].width, 2)
+  assert.equal(list[1].height, 2)
+  fix.data ?
+  assert.equal(match(list[1].data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'Ok clip pixels') :
+  assert.ok(list[1].data[0], 'Ok all clip pixels')
 }
 
 
@@ -80,18 +101,27 @@ t('some path', async t => {
 })
 t.skip('not existing path')
 t('https', async t => {
-  t.plan(ASSERT_N)
-  await testSource(t, pngFixURL)
+  if (await online()) {
+    t.plan(ASSERT_N)
+    await testSource(t, pngFixURL)
+  }
+
   t.end()
 })
 t('http', async t => {
-  t.plan(ASSERT_N)
-  await testSource(t, pngFixURL.replace('https', 'http'))
+  if (await online()) {
+    t.plan(ASSERT_N)
+    await testSource(t, pngFixURL.replace('https', 'http'))
+  }
+
   t.end()
 })
 t('default URL', async t => {
-  t.plan(ASSERT_N)
-  await testSource(t, pngFixURL.replace('https:', ''))
+  if (await online()) {
+    t.plan(ASSERT_N)
+    await testSource(t, pngFixURL.replace('https:', ''))
+  }
+
   t.end()
 })
 t.skip('not existing url')
@@ -479,19 +509,27 @@ t('[[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]], ...]', async t => {
 // t('gif')
 // t('bmp')
 
-// others
+// cases
 t(`options directly`, async t => {
   t.plan(ASSERT_N)
   await testSource(t, {source: pngFixURL})
   t.end()
 })
-// t(`ndarray`)
-// t('regl')
-// t('gl- components')
-// t('null')
+t(`ndarray`, async t => {
+  t.plan(ASSERT_N)
 
-// t('multiple sources')
+  getNdPixels(pngFixURL, async (e, px) => {
+    await testSource(t, px)
+    t.end()
+  })
+})
+t.skip(`.all`, async t => {
+  // different sources
+  t.end()
+})
+t('changed uncached version')
 
+// TODO: bad error cases
 
 
 // get-pixels cases
