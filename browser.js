@@ -38,6 +38,7 @@ function getPixelsAll (src, o, cb) {
       return list
     }, function (err) {
       cb && cb(err)
+      return Promise.reject(err)
     })
   }
 
@@ -45,15 +46,20 @@ function getPixelsAll (src, o, cb) {
   var handlers = {}
   var list = []
   for (var name in src) {
-    list.push(handlers[name] = getPixels(src[name], o))
+    handlers[name] = list.push(getPixels(src[name], o)) - 1
   }
 
   // return promise resolved with dict
-  return Promise.all(list).then(function () {
-    cb && cb(null, handlers)
-    return handlers
+  return Promise.all(list).then(function (list) {
+    var result = {}
+    for (var name in handlers) {
+      result[name] = list[handlers[name]]
+    }
+    cb && cb(null, result)
+    return result
   }, function (err) {
     cb && cb(err)
+    return Promise.reject(err)
   })
 }
 

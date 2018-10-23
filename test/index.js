@@ -44,7 +44,6 @@ t('some path', async t => {
   await testSource(t, 'test/test_pattern.png')
   t.end()
 })
-t.skip('not existing path')
 t('https', async t => {
   if (await online()) {
     t.plan(ASSERT_N)
@@ -69,8 +68,6 @@ t('default URL', async t => {
 
   t.end()
 })
-t.skip('not existing url')
-t.skip('not an image url')
 t('data URL', async t => {
   t.plan(2 * ASSERT_N)
   await testSource(t, fixture.pngDataURL)
@@ -86,13 +83,6 @@ t('raw pixels base64', async t => {
   t.plan(ASSERT_N)
   await testSource(t, ab2s(fixture.data, 'base64'), {w:16, h:8})
   t.end()
-})
-t.skip('bad string', async t => {
-  t.plan(ASSERT_N)
-  getPixels('$$$').catch(e => t.ok(e))
-  // t.throws(() => {
-  //   getPixels('$$$')
-  // })
 })
 
 // DOMs
@@ -123,17 +113,6 @@ t(`<video>`, async t => {
     width: 480, height: 360
   })
 
-  t.end()
-})
-t.skip('<picture>', async t => {
-  t.plan(ASSERT_N)
-  let el = document.createElement('div')
-  el.innerHTML = `<picture>
-    <source srcset="/media/cc0-images/Wave_and_Surfer--240x200.jpg"
-            media="(min-width: 800px)">
-    <img src="/media/cc0-images/Painted_Hand--298x332.jpg">
-  </picture>`
-  await testSource(t, el.firstChild)
   t.end()
 })
 t(`Image`, async t => {
@@ -172,43 +151,6 @@ t(`File, Blob`, async t => {
   await testSource(t, new Blob([pngFixData]))
 
   t.end()
-})
-t.skip(`File, Blob raw`, async t => {
-  t.plan(ASSERT_N * 2)
-
-  await testSource(t, new File([fixture.data], 'file.png'))
-  await testSource(t, new Blob([fixture.data]))
-
-  t.end()
-})
-t.skip('SourceBuffer')
-t.skip('SourceBufferList')
-t.skip(`MediaSource`, async t => {
-  t.plan(ASSERT_N)
-
-  var mediaSource = new MediaSource()
-  var video = new HTMLVideoElement()
-  video.src = URL.createObjectURL(mediaSource)
-  mediaSource.addEventListener('sourceopen', function () {
-    mediaSource.addSourceBuffer(mimeCodec)
-  })
-
-  // await testSource(t, new)
-
-  t.end()
-})
-t.skip(`OffscreenCanvas, bitmaprenderer`, async t => {
-  t.plan(ASSERT_N * 2)
-
-  let offscreen = new OffscreenCanvas(fixture.width, fixture.height)
-  let context = offscreen.getContext('webgl')
-
-  // ... some drawing for the first canvas using the gl context ...
-
-  // Commit rendering to the first canvas
-  var bm = offscreen.transferToImageBitmap()
-
-  one.transferImageBitmap(bm);
 })
 t(`Canvas/Context2D`, async t => {
   t.plan(ASSERT_N * 2)
@@ -448,11 +390,6 @@ t('[[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]], ...]', async t => {
   t.end()
 })
 
-// // decode
-// t('png')
-// t('jpg')
-// t('gif')
-// t('bmp')
 
 // cases
 t(`options directly`, async t => {
@@ -468,21 +405,134 @@ t(`ndarray`, async t => {
     t.end()
   })
 })
-t.skip(`multiple sources`, async t => {
-  // different sources list
 
-  // different source dict
+
+// // decode
+// t('png')
+// t('jpg')
+// t('gif')
+// t('bmp')
+t(`multiple sources: list`, async t => {
+  t.plan(3)
+  // different sources list
+  let list = await getPixels.all([
+    fixture.data,
+    fixture.pngDataURL,
+    fixture.canvas
+  ], {width: fixture.width, height: fixture.height})
+
+  t.deepEqual(fixture.data, list[0].data)
+  t.deepEqual(fixture.data, list[1].data)
+  t.deepEqual(fixture.data, list[2].data)
 
   t.end()
 })
-t.skip('changed URL contents', async t => {
 
+t('multiple sources: dict', async t => {
+  t.plan(3)
+
+  // different source dict
+  let {a, b, c} = await getPixels.all({
+    a: fixture.data,
+    b: fixture.pngDataURL,
+    c: fixture.canvas
+  }, {width: fixture.width, height: fixture.height})
+
+  t.deepEqual(fixture.data, a.data)
+  t.deepEqual(fixture.data, b.data)
+  t.deepEqual(fixture.data, c.data)
+
+  t.end()
 })
-t('URL timeout')
-t('not existing path')
-t('not existing URL')
-t('bad URL data')
-t('malformed encoded buffer')
+
+t('multiple source error', async t => {
+  t.plan(2)
+
+  await getPixels.all([
+    fixture.data,
+    fixture.pngDataURL,
+    fixture.canvas
+  ]).catch(e => {
+    t.ok(e)
+  })
+  await getPixels.all({
+    a: fixture.data,
+    b: fixture.pngDataURL,
+    c: fixture.canvas
+  }).catch(e => {
+    t.ok(e)
+  })
+
+  t.end()
+})
+t('changed URL contents', async t => {
+  t.end()
+})
+t.skip('URL timeout')
+t.skip('not existing path')
+t.skip('not existing URL')
+t.skip('bad URL data')
+t.skip('malformed encoded buffer')
+t.skip(`File, Blob raw`, async t => {
+  t.plan(ASSERT_N * 2)
+
+  await testSource(t, new File([fixture.data], 'file.png'))
+  await testSource(t, new Blob([fixture.data]))
+
+  t.end()
+})
+t.skip('SourceBuffer')
+t.skip('SourceBufferList')
+t.skip(`MediaSource`, async t => {
+  t.plan(ASSERT_N)
+
+  var mediaSource = new MediaSource()
+  var video = new HTMLVideoElement()
+  video.src = URL.createObjectURL(mediaSource)
+  mediaSource.addEventListener('sourceopen', function () {
+    mediaSource.addSourceBuffer(mimeCodec)
+  })
+
+  // await testSource(t, new)
+
+  t.end()
+})
+t.skip(`OffscreenCanvas, bitmaprenderer`, async t => {
+  t.plan(ASSERT_N * 2)
+
+  let offscreen = new OffscreenCanvas(fixture.width, fixture.height)
+  let context = offscreen.getContext('webgl')
+
+  // ... some drawing for the first canvas using the gl context ...
+
+  // Commit rendering to the first canvas
+  var bm = offscreen.transferToImageBitmap()
+
+  one.transferImageBitmap(bm);
+})
+t.skip('<picture>', async t => {
+  t.plan(ASSERT_N)
+  let el = document.createElement('div')
+  el.innerHTML = `<picture>
+    <source srcset="/media/cc0-images/Wave_and_Surfer--240x200.jpg"
+            media="(min-width: 800px)">
+    <img src="/media/cc0-images/Painted_Hand--298x332.jpg">
+  </picture>`
+  await testSource(t, el.firstChild)
+  t.end()
+})
+t.skip('bad string', async t => {
+  t.plan(ASSERT_N)
+  getPixels('$$$').catch(e => t.ok(e))
+  // t.throws(() => {
+  //   getPixels('$$$')
+  // })
+})
+t.skip('not existing path')
+t.skip('not existing url')
+t.skip('not an image url')
+
+
 
 
 // get-pixels cases
