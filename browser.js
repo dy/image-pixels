@@ -12,6 +12,7 @@ var flat = require('arr-flatten')
 var p = require('primitive-pool')
 var WeakMap = require('es6-weak-map')
 var clipPixels = require('clip-pixels')
+var
 
 
 // cache of data depending on source

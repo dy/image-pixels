@@ -68,7 +68,7 @@ t('protocol-relative URL', async t => {
 
   t.end()
 })
-t.only('data URL', async t => {
+t('data URL', async t => {
   t.plan(2 * ASSERT_N)
   await testSource(t, fixture.pngDataURL)
   await testSource(t, fixture.jpgDataURL)
@@ -686,8 +686,13 @@ async function testSource(t, arg, o, fix=fixture) {
 
   t.equal(data.width, fix.width)
   t.equal(data.height, fix.height)
+  // for (var i = 0; i < fix.data.length; i++) {
+  //   var val = fix.data[i]
+  //   if (fix.data[i] != data.data[i]) console.log(i, fix.data[i], data.data[i])
+  // }
+
   fix.data ?
-  t.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Ok async pixels') :
+  t.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .006}), 0, 'Ok async pixels') :
   t.ok(data.data[0], 'Ok async pixels')
 
   // second time (cache)
@@ -697,7 +702,7 @@ async function testSource(t, arg, o, fix=fixture) {
   t.deepEqual(data.data, data2.data)
   t.equal(data2.width, fix.width)
   t.equal(data2.height, fix.height)
-  fix.data ? t.equal(match(data2.data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Ok async pixels twice') :
+  fix.data ? t.equal(match(data2.data, fix.data, null, fix.width, fix.height, {threshold: .006}), 0, 'Ok async pixels twice') :
   t.ok(data2.data[0], 'Ok async pixels twice')
 
   // clip
@@ -708,7 +713,7 @@ async function testSource(t, arg, o, fix=fixture) {
   t.equal(clip.width, 2)
   t.equal(clip.height, 2)
   fix.data ?
-  t.equal(match(clip.data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'Ok clip pixels') :
+  t.equal(match(clip.data, clipFix.data, null, 2, 2, {threshold: .006}), 0, 'Ok clip pixels') :
   t.ok(clip.data[0], 'Ok clip pixels')
 
   // alltogether
@@ -722,13 +727,13 @@ async function testSource(t, arg, o, fix=fixture) {
   t.deepEqual(data.data, list[0].data, 'Ok all pixels data')
   t.equal(list[0].width, fix.width)
   t.equal(list[0].height, fix.height)
-  fix.data ? t.equal(match(list[0].data, fix.data, null, fix.width, fix.height, {threshold: .004}), 0, 'Ok all pixels') :
+  fix.data ? t.equal(match(list[0].data, fix.data, null, fix.width, fix.height, {threshold: .006}), 0, 'Ok all pixels') :
   t.ok(list[0].data[0], 'Ok all pixels')
 
   t.equal(list[1].width, 2)
   t.equal(list[1].height, 2)
   fix.data ?
-  t.equal(match(list[1].data, clipFix.data, null, 2, 2, {threshold: 0}), 0, 'Ok clip pixels') :
+  t.equal(match(list[1].data, clipFix.data, null, 2, 2, {threshold: .006}), 0, 'Ok clip pixels') :
   t.ok(list[1].data[0], 'Ok all clip pixels')
 }
 

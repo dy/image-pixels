@@ -7,7 +7,8 @@
     "test": "test"
   },
   "browser": {
-    "./lib/url": "./lib/url-browser.js"
+    "./lib/url": "./lib/url-browser.js",
+    "./lib/default": "./lib/default-browser.js"
   },
   "browserify": {
     "transform": [
@@ -17,6 +18,7 @@
   "dependencies": {
     "arr-flatten": "^1.1.0",
     "arraybuffer-to-string": "^1.0.2",
+    "buffer-to-uint8array": "^1.1.0",
     "clip-pixels": "^1.0.1",
     "es6-weak-map": "^2.0.2",
     "file-type": "^10.0.0",
