@@ -23,7 +23,7 @@ var clipFix = {
   height: 2
 }
 var pngFixData = s2ab(fixture.pngDataURL)
-var pngFixURL = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png'
+var pngFixURL = fixture.pngURL
 
 const ASSERT_N = 17
 
@@ -465,15 +465,15 @@ t('multiple source error', async t => {
 
   t.end()
 })
-t('changed URL contents', async t => {
+t.skip('changed URL contents', async t => {
+  // TODO: create tmp file, rewrite it
+
   t.end()
 })
 t.skip('URL timeout')
-t.skip('not existing path')
-t.skip('not existing URL')
 t.skip('bad URL data')
 t.skip('malformed encoded buffer')
-t.skip(`File, Blob raw`, async t => {
+t.skip(`File, Blob encoded data`, async t => {
   t.plan(ASSERT_N * 2)
 
   await testSource(t, new File([fixture.data], 'file.png'))
@@ -510,27 +510,46 @@ t.skip(`OffscreenCanvas, bitmaprenderer`, async t => {
 
   one.transferImageBitmap(bm);
 })
-t.skip('<picture>', async t => {
+t('<picture>', async t => {
   t.plan(ASSERT_N)
   let el = document.createElement('div')
   el.innerHTML = `<picture>
-    <source srcset="/media/cc0-images/Wave_and_Surfer--240x200.jpg"
-            media="(min-width: 800px)">
-    <img src="/media/cc0-images/Painted_Hand--298x332.jpg">
+    <source srcset="${fixture.jpgDataURL}">
+    <img src="${fixture.pngDataURL}">
   </picture>`
   await testSource(t, el.firstChild)
   t.end()
 })
-t.skip('bad string', async t => {
-  t.plan(ASSERT_N)
-  getPixels('$$$').catch(e => t.ok(e))
-  // t.throws(() => {
-  //   getPixels('$$$')
-  // })
+t('bad string', async t => {
+  t.plan(1)
+  try {
+    await getPixels('')
+  } catch (e) {
+    t.ok(e)
+  }
+
+  t.end()
 })
-t.skip('not existing path')
-t.skip('not existing url')
-t.skip('not an image url')
+t('not existing url', async t => {
+  t.plan(1)
+  try {
+    await getPixels('./test/xxx.png')
+  } catch (e) {
+    t.ok(e)
+  }
+
+  t.end()
+})
+t('not an image url', async t => {
+  t.plan(1)
+  try {
+    await getPixels('./test/fixture.js')
+  } catch (e) {
+    t.ok(e)
+  }
+
+  t.end()
+})
 
 
 

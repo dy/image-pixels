@@ -11,6 +11,7 @@ var isBlob = require('is-blob')
 var flat = require('arr-flatten')
 var p = require('primitive-pool')
 var WeakMap = require('es6-weak-map')
+var clipPixels = require('clip-pixels')
 
 
 module.exports = getPixels
@@ -84,8 +85,9 @@ function getPixels(src, o, cb) {
     cb(err)
   })
 
-  // handle arguments
   if (!src) src = {}
+
+  // handle arguments
   if (typeof o === 'string') o = {type: o}
   else if (!o) o = {}
   else if (Array.isArray(o)) o = {shape: o}
@@ -114,12 +116,21 @@ function getPixels(src, o, cb) {
 
   // get cached instance
   if (cache.has(p(src))) {
-    // FIXME: handle clipping
-    return Promise.resolve(cache.get(p(src)))
+    var result = cache.get(p(src))
+    if (clip.x || clip.y || clip.width !== result.width || clip.height !== result.height) {
+      result = new Uint8Array(clipPixels(result, [result.width, result.height], [clip.x, clip.y, clip.width, clip.height]))
+      result.data = result
+      result.width = clip.width
+      result.height = clip.height
+    }
+
+    return Promise.resolve(result)
   }
 
   // handle source type
   if (typeof src === 'string') {
+    if (!src) return Promise.reject(new Error('Bad URL'))
+
     // convert base64 to datauri
     if (isBase64(src) && !/^data:/i.test(src)) {
       var buf = new Uint8Array(toab(src))
@@ -144,7 +155,7 @@ function getPixels(src, o, cb) {
         ok(readPixelData(img))
       }
       img.onerror = function(err) {
-        nok(err)
+        nok(new Error('Bad image URL/path', err))
       }
       img.src = src
     })
@@ -156,6 +167,9 @@ function getPixels(src, o, cb) {
     src = new Image()
     src.src = url
   }
+
+  // fetch closest image/video
+  if (src.tagName === 'PICTURE') src = src.querySelector('img')
 
   // <img>
   if (src instanceof Image) {

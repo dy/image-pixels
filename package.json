@@ -15,8 +15,10 @@
   "dependencies": {
     "arr-flatten": "^1.1.0",
     "arraybuffer-to-string": "^1.0.2",
+    "clip-pixels": "^1.0.1",
     "es6-weak-map": "^2.0.2",
     "file-type": "^10.0.0",
+    "flip-pixels": "^1.0.1",
     "is-base64": "0.0.6",
     "is-blob": "^1.0.0",
     "is-plain-obj": "^1.1.0",
