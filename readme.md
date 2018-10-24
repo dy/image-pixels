@@ -1,14 +1,14 @@
-# img-pixels [![Build Status](https://travis-ci.org/dy/img-pixels.svg?branch=master)](https://travis-ci.org/dy/img-pixels) [![unstable](https://img.shields.io/badge/stability-unstable-green.svg)](http://github.com/badges/stability-badges)
+# pxls [![Build Status](https://travis-ci.org/dy/pxls.svg?branch=master)](https://travis-ci.org/dy/pxls) [![unstable](https://img.shields.io/badge/stability-unstable-green.svg)](http://github.com/badges/stability-badges)
 
 Get pixel data for a given URL, path, buffer, canvas, image or any other source. Intented for image based tests, first of all.
 
 
 ## Usage
 
-[![$ npm install img-pixels](http://nodei.co/npm/img-pixels.png?mini=true)](http://npmjs.org/package/img-pixels)
+[![$ npm install pxls](http://nodei.co/npm/pxls.png?mini=true)](http://npmjs.org/package/pxls)
 
 ```javascript
-var pixels = require('img-pixels')
+var pixels = require('pxls')
 
 // load single source
 var {data, width, height} = await pixels('lena.png')

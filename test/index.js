@@ -60,7 +60,7 @@ t('http', async t => {
 
   t.end()
 })
-t('default URL', async t => {
+t('protocol-relative URL', async t => {
   if (await online()) {
     t.plan(ASSERT_N)
     await testSource(t, pngFixURL.replace('https:', ''))
@@ -68,7 +68,7 @@ t('default URL', async t => {
 
   t.end()
 })
-t('data URL', async t => {
+t.only('data URL', async t => {
   t.plan(2 * ASSERT_N)
   await testSource(t, fixture.pngDataURL)
   await testSource(t, fixture.jpgDataURL)
@@ -407,11 +407,6 @@ t(`ndarray`, async t => {
 })
 
 
-// // decode
-// t('png')
-// t('jpg')
-// t('gif')
-// t('bmp')
 t(`multiple sources: list`, async t => {
   t.plan(3)
   // different sources list
@@ -465,51 +460,6 @@ t('multiple source error', async t => {
 
   t.end()
 })
-t.skip('changed URL contents', async t => {
-  // TODO: create tmp file, rewrite it
-
-  t.end()
-})
-t.skip('URL timeout')
-t.skip('bad URL data')
-t.skip('malformed encoded buffer')
-t.skip(`File, Blob encoded data`, async t => {
-  t.plan(ASSERT_N * 2)
-
-  await testSource(t, new File([fixture.data], 'file.png'))
-  await testSource(t, new Blob([fixture.data]))
-
-  t.end()
-})
-t.skip('SourceBuffer')
-t.skip('SourceBufferList')
-t.skip(`MediaSource`, async t => {
-  t.plan(ASSERT_N)
-
-  var mediaSource = new MediaSource()
-  var video = new HTMLVideoElement()
-  video.src = URL.createObjectURL(mediaSource)
-  mediaSource.addEventListener('sourceopen', function () {
-    mediaSource.addSourceBuffer(mimeCodec)
-  })
-
-  // await testSource(t, new)
-
-  t.end()
-})
-t.skip(`OffscreenCanvas, bitmaprenderer`, async t => {
-  t.plan(ASSERT_N * 2)
-
-  let offscreen = new OffscreenCanvas(fixture.width, fixture.height)
-  let context = offscreen.getContext('webgl')
-
-  // ... some drawing for the first canvas using the gl context ...
-
-  // Commit rendering to the first canvas
-  var bm = offscreen.transferToImageBitmap()
-
-  one.transferImageBitmap(bm);
-})
 t('<picture>', async t => {
   t.plan(ASSERT_N)
   let el = document.createElement('div')
@@ -552,6 +502,57 @@ t('not an image url', async t => {
 })
 
 
+// TODO
+// decode
+t('png')
+t('jpg')
+t('gif')
+t('bmp')
+t.skip('#img-el', async t => {
+})
+t.skip('changed URL contents', async t => {
+  // TODO: create tmp file, rewrite it
+})
+t.skip('URL timeout')
+t.skip('bad URL data')
+t.skip('malformed encoded buffer')
+t.skip(`File, Blob encoded data`, async t => {
+  t.plan(ASSERT_N * 2)
+
+  await testSource(t, new File([fixture.data], 'file.png'))
+  await testSource(t, new Blob([fixture.data]))
+
+  t.end()
+})
+t.skip('SourceBuffer')
+t.skip('SourceBufferList')
+t.skip(`MediaSource`, async t => {
+  t.plan(ASSERT_N)
+
+  var mediaSource = new MediaSource()
+  var video = new HTMLVideoElement()
+  video.src = URL.createObjectURL(mediaSource)
+  mediaSource.addEventListener('sourceopen', function () {
+    mediaSource.addSourceBuffer(mimeCodec)
+  })
+
+  // await testSource(t, new)
+
+  t.end()
+})
+t.skip(`OffscreenCanvas, bitmaprenderer`, async t => {
+  t.plan(ASSERT_N * 2)
+
+  let offscreen = new OffscreenCanvas(fixture.width, fixture.height)
+  let context = offscreen.getContext('webgl')
+
+  // ... some drawing for the first canvas using the gl context ...
+
+  // Commit rendering to the first canvas
+  var bm = offscreen.transferToImageBitmap()
+
+  one.transferImageBitmap(bm);
+})
 
 
 // get-pixels cases

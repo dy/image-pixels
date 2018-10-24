@@ -1,12 +1,14 @@
 {
-  "name": "get-pixel-data",
+  "name": "pxls",
   "version": "1.0.0",
-  "description": "Read pixel data from any image source",
+  "description": "Read pixel data from an image source",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
-  "browser": "./browser.js",
+  "browser": {
+    "./lib/url": "./lib/url-browser.js"
+  },
   "browserify": {
     "transform": [
       "brfs"
@@ -19,10 +21,13 @@
     "es6-weak-map": "^2.0.2",
     "file-type": "^10.0.0",
     "flip-pixels": "^1.0.1",
+    "image-type": "^3.0.0",
     "is-base64": "0.0.6",
     "is-blob": "^1.0.0",
+    "is-browser": "^2.1.0",
     "is-plain-obj": "^1.1.0",
     "is-promise": "^2.1.0",
+    "is-url": "^1.2.4",
     "object-assign": "^4.1.1",
     "parse-rect": "^1.2.0",
     "primitive-pool": "^1.0.0",
@@ -34,6 +39,8 @@
     "is-online": "^7.0.0",
     "pixelmatch": "^4.0.2",
     "regl": "^1.3.7",
+    "service-mocker": "^2.1.2",
+    "service-mocker-polyfills": "^1.1.4",
     "tape": "^4.9.1"
   },
   "scripts": {
@@ -42,7 +49,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/dy/get-pixel-data.git"
+    "url": "git://github.com/dy/pxls.git"
   },
   "keywords": [
     "pixel",
@@ -63,6 +70,7 @@
     "get-pixels",
     "node",
     "ndarray",
+    "pxls",
     "get-pixel-data",
     "get-image-pixels",
     "get-imagedata",

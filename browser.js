@@ -14,6 +14,10 @@ var WeakMap = require('es6-weak-map')
 var clipPixels = require('clip-pixels')
 
 
+// cache of data depending on source
+var cache = new WeakMap()
+
+
 module.exports = getPixels
 module.exports.get = getPixels
 module.exports.all = getPixelsAll
@@ -63,11 +67,6 @@ function getPixelsAll (src, o, cb) {
     return Promise.reject(err)
   })
 }
-
-
-
-// cache of data depending on source
-var cache = new WeakMap()
 
 
 function getPixels(src, o, cb) {
