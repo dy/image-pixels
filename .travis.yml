@@ -4,7 +4,13 @@ sudo: required
 dist: trusty
 addons:
   apt:
+    sources:
+    - ubuntu-toolchain-r-test
     packages:
+    - xutils-dev
+    - libxi-dev
+    - libxxf86vm-dev
+    - x11proto-xf86vidmode-dev
     - mesa-utils
     - xvfb
     - libgl1-mesa-dri
