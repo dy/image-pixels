@@ -26,7 +26,7 @@ var pngFixData = s2ab(fixture.pngDataURL)
 var pngFixURL = fixture.pngURL
 
 const ASSERT_N = 17
-const REQUEST_TIMEOUT = 1500
+const REQUEST_TIMEOUT = 3000
 
 
 // strings

@@ -140,7 +140,7 @@ function getPixels(src, o, cb) {
 		if (isBase64(src) && !/^data:/i.test(src)) {
 			src = new Uint8Array(s2ab(src))
 
-			return Promise.resolve(loadRaw(src, {type: type, shape: [width, height], clip: clip}))
+			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
 		}
 
 		// url, path, datauri
@@ -164,17 +164,19 @@ function getPixels(src, o, cb) {
 	if (global.Image && src instanceof Image) {
 		if (src.complete) {
 			captureShape(src)
-			return Promise.resolve(loadRaw(src, {type: type, shape: [width, height], clip: clip}))
+			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
 		}
 
 		return new Promise(function (ok, err) {
 			src.addEventListener('load', function () {
 				captureShape(src)
-				ok(loadRaw(src, {type: type, shape: [width, height], clip: clip}))
+				ok(src)
 			})
 			src.addEventListener('error', function(err) {
 				nok(err)
 			})
+		}).then(function (src) {
+			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
 		})
 	}
 
@@ -182,17 +184,19 @@ function getPixels(src, o, cb) {
 	if (global.HTMLMediaElement && src instanceof HTMLMediaElement) {
 		if (src.readyState) {
 			captureShape({w: src.videoWidth, h: src.videoHeight})
-			return Promise.resolve(loadRaw(src, {type: type, shape: [width, height], clip: clip}))
+			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
 		}
 
 		return new Promise(function (ok, err) {
 			src.addEventListener('loadeddata', function () {
 				captureShape({w: src.videoWidth, h: src.videoHeight})
-				ok(loadRaw(src, {type: type, shape: [width, height], clip: clip}))
+				ok(src)
 			})
 			src.addEventListener('error', function(err) {
 				nok(err)
 			})
+		}).then(function (src) {
+			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
 		})
 	}
 
@@ -250,18 +254,6 @@ function getPixels(src, o, cb) {
 		// SVG had width as object
 		if (!width || typeof width !== 'number') width = container && container.shape && container.shape[0] || container.width || container.w || container.drawingBufferWidth
 		if (!height || typeof height !== 'number') height = container && container.shape && container.shape[1] || container.height || container.h || container.drawingBufferHeight
-	}
-
-	// cache data, return promise
-	function cached (source) {
-		return function (data) {
-			return Promise.resolve(data).then(function (data) {
-				if (!o || o.cache !== false) {
-					cache.set(p(source), data)
-				}
-				return data
-			})
-		}
 	}
 }
 
