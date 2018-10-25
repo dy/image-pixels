@@ -3,7 +3,7 @@
 var isObj = require('is-plain-obj')
 var isBase64 = require('is-base64')
 var imgType = require('image-type')
-var toab = require('string-to-arraybuffer')
+var s2ab = require('string-to-arraybuffer')
 var rect = require('parse-rect')
 var extend = require('object-assign')
 var isBlob = require('is-blob')
@@ -11,6 +11,8 @@ var p = require('primitive-pool')
 var WeakMap = require('es6-weak-map')
 var clipPixels = require('clip-pixels')
 var isBrowser = require('is-browser')
+var toab = require('to-array-buffer')
+var flat = require('arr-flatten')
 var loadUrl = require('./lib/url')
 var loadRaw = require('./lib/raw')
 var loadGl = require('./lib/gl')
@@ -86,18 +88,19 @@ function getPixels(src, o, cb) {
 		cb(err)
 	})
 
-	if (!src) src = {}
 
 	// handle arguments
 	if (typeof o === 'string') o = {type: o}
 	else if (!o) o = {}
 	else if (Array.isArray(o)) o = {shape: o}
-	if (isObj(src)) {
-		o = extend(src, o)
+	if (isObj(src) || !src) {
+		o = extend(src || {}, o)
 		src = o.source || o.src
 
 		// nested source
 		if (isObj(src)) src = src.source || src.src || src
+
+		if (!src) src = {}
 	}
 
 	// detect clipping
@@ -134,7 +137,7 @@ function getPixels(src, o, cb) {
 
 		// convert base64 to datauri
 		if (isBase64(src) && !/^data:/i.test(src)) {
-			var buf = new Uint8Array(toab(src))
+			var buf = new Uint8Array(s2ab(src))
 
 			return Promise.resolve(loadRaw(buf, {type: type, shape: [width, height], clip: clip}))
 		}
@@ -204,27 +207,49 @@ function getPixels(src, o, cb) {
 			src = buf
 		}
 
+		// array of arrays
+		if (Array.isArray(src)) {
+			// [r,g,b,a,r,g,b,a,...]
+			// [[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]]]
+			// [[r,g,b,a], [r,g,b,a], [r,g,b,a], [r,g,b,a]]
+			// [[r,g,b,a,r,g,b,a], [r,g,b,a,r,g,b,a]]
+			src = new Uint8Array(flat(src))
+		}
+
 		// retrieve canvas from contexts
-		var ctx = src.readPixels ? src : src._gl || src.gl || src.context || src.ctx
+		var ctx = (src.readPixels || src.getImageData) ? src : src._gl || src.gl || src.context || src.ctx || (src.getContext && (src.getContext('2d') || src.getContext('webgl')))
 
-		// WebGL context directly
-		if (ctx && ctx.readPixels) return loadGl(ctx, {type: type, shape: [width, height], clip: clip})
+		if (ctx) {
+			captureShape(ctx)
+			// WebGL context directly
+			if (ctx.readPixels) {
 
-		src = ctx && ctx.canvas || src.canvas || src
+				return loadGl(ctx, {type: type, shape: [width, height], clip: clip})
+			}
 
+			// 2d and other contexts
+			captureShape(ctx.canvas)
+
+			return loadRaw(ctx.canvas, {type: type, shape: [width, height], clip: clip})
+		}
+
+		// raw data container
 		captureShape(src)
-		// retrieve buffer from buffer containers
-		src = src.data || src.buffer || src._data || src
-		captureShape(src)
 
+		if (src.data || src._data || src.buffer || src instanceof ArrayBuffer) {
+			src = new Uint8Array(toab(src))
+			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
+		}
+
+		// any other source
 		return loadRaw(src, {type: type, shape: [width, height], clip: clip})
 	})
 
 	// try to figure out width/height from container
 	function captureShape(container) {
 		// SVG had width as object
-		if (!width || typeof width !== 'number') width = container && container.shape && container.shape[0] || container.width || container.w
-		if (!height || typeof height !== 'number') height = container && container.shape && container.shape[1] || container.height || container.h
+		if (!width || typeof width !== 'number') width = container && container.shape && container.shape[0] || container.width || container.w || container.drawingBufferWidth
+		if (!height || typeof height !== 'number') height = container && container.shape && container.shape[1] || container.height || container.h || container.drawingBufferHeight
 	}
 }
 

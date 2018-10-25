@@ -9,7 +9,6 @@ var s2ab = require('string-to-arraybuffer')
 var fixture = require('./fixture')
 var ab2s = require('arraybuffer-to-string')
 var x = require('object-assign')
-var regl = require('regl')
 var a = require('assert')
 var getNdPixels = require('get-pixels')
 var isOnline = require('is-online')
@@ -27,6 +26,7 @@ var pngFixData = s2ab(fixture.pngDataURL)
 var pngFixURL = fixture.pngURL
 
 const ASSERT_N = 17
+const REQUEST_TIMEOUT = 1500
 
 
 // strings
@@ -172,73 +172,22 @@ t(`Canvas/Context2D`, async t => {
   t.end()
 })
 t(`Canvas/WebGLContext`, async t => {
-  var gl
-  if (!isBrowser) {
-    gl = require('gl')(fixture.width, fixture.height)
-  }
-  else {
-    var canvas = document.createElement('canvas')
-    canvas.width = fixture.width
-    canvas.height = fixture.height
-    gl = canvas.getContext('webgl')
-  }
-
-  var _regl = regl({gl: gl})
-  var draw = _regl({
-    vert: `
-      precision mediump float;
-      attribute vec2 position;
-      attribute vec4 color;
-      uniform vec2 shape;
-      varying vec4 fragColor;
-      void main() {
-        gl_PointSize = 1.;
-        gl_Position = vec4( 2. * (position + .5) / shape - 1., 0, 1);
-        gl_Position.y *= -1.;
-        fragColor = color / 255.;
-      }`,
-    frag: `
-    precision mediump float;
-    varying vec4 fragColor;
-    void main () {
-      gl_FragColor = fragColor;
-    }`,
-    attributes: {
-      color: [
-        0,0,0,255, 255,0,0,255, 255,255,0,255, 255,0,255,255,
-        0,255,0,255, 0,255,255,255,
-        0,0,255,255
-      ],
-      position: [
-        0,0, 1,0, 2,0, 3,0,
-        0,1, 1,1,
-        0,2
-      ]
-    },
-    uniforms: {
-      shape: [16, 8]
-    },
-    primitive: 'points',
-    count: 7
-  })
-  draw()
-
   if (isBrowser) {
     t.plan(ASSERT_N * 3)
-    await testSource(t, canvas)
-    await testSource(t, canvas.getContext('webgl'))
+    await testSource(t, fixture.gl)
+    await testSource(t, fixture.canvasGl)
   }
   else {
     t.plan(ASSERT_N * 2)
-    await testSource(t, gl)
+    await testSource(t, fixture.gl)
   }
-  await testSource(t, _regl)
+  await testSource(t, fixture.regl)
 
   t.end()
 })
 
 // buffers
-t.only(`Buffer`, async t => {
+t(`Buffer`, async t => {
   t.plan(ASSERT_N + 1)
 
   var buf = new Buffer(fixture.data)
@@ -431,17 +380,25 @@ t(`ndarray`, async t => {
 
 
 t(`multiple sources: list`, async t => {
-  t.plan(3)
+  t.plan(8)
+
   // different sources list
   let list = await getPixels.all([
     fixture.data,
     fixture.pngDataURL,
-    fixture.canvas
+    fixture.pngURL,
+    fixture.gl
   ], {width: fixture.width, height: fixture.height})
 
-  t.deepEqual(fixture.data, list[0].data)
-  t.deepEqual(fixture.data, list[1].data)
-  t.deepEqual(fixture.data, list[2].data)
+  t.ok(list[0].data instanceof Uint8Array)
+  t.ok(list[1].data instanceof Uint8Array)
+  t.ok(list[2].data instanceof Uint8Array)
+  t.ok(list[3].data instanceof Uint8Array)
+
+  t.equal(match(list[0].data, fixture.data, null, fixture.width, fixture.height, {threshold: .006}), 0, 'Ok data pixels')
+  t.equal(match(list[1].data, fixture.data, null, fixture.width, fixture.height, {threshold: .006}), 0, 'Ok data pixels')
+  t.equal(match(list[2].data, fixture.data, null, fixture.width, fixture.height, {threshold: .006}), 0, 'Ok data pixels')
+  t.equal(match(list[3].data, fixture.data, null, fixture.width, fixture.height, {threshold: .006}), 0, 'Ok data pixels')
 
   t.end()
 })
@@ -453,7 +410,7 @@ t('multiple sources: dict', async t => {
   let {a, b, c} = await getPixels.all({
     a: fixture.data,
     b: fixture.pngDataURL,
-    c: fixture.canvas
+    c: fixture.pngURL
   }, {width: fixture.width, height: fixture.height})
 
   t.deepEqual(fixture.data, a.data)
@@ -484,6 +441,8 @@ t('multiple source error', async t => {
   t.end()
 })
 t('<picture>', async t => {
+  if (!isBrowser) return t.end()
+
   t.plan(ASSERT_N)
   let el = document.createElement('div')
   el.innerHTML = `<picture>
@@ -580,7 +539,8 @@ t.skip(`OffscreenCanvas, bitmaprenderer`, async t => {
 
 // get-pixels cases
 function test_image (t, pixels) {
-  t.deepEqual(pixels.data, fixture.data)
+  t.equal(match(pixels.data, fixture.data, null, fixture.width, fixture.height, {threshold: 0}), 0)
+  // t.deepEqual(pixels.data, fixture.data)
 }
 t('get-pixels', async function(t) {
   getPixels('test/lena.png', function(err, pixels) {
@@ -641,7 +601,7 @@ t('get-pixels-bmp', async function(t) {
   })
 })
 
-t('data url', async function(t) {
+t.only('data url', async function(t) {
   var url = 'data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7'
   getPixels(url, function(err, data) {
     if(err) {
@@ -703,7 +663,7 @@ t('get-url gif img', async function(t) {
 
 async function testSource(t, arg, o, fix=fixture) {
   // direct
-  let to = setTimeout(function () {t.fail('Direct timeout')}, 1000)
+  let to = setTimeout(function () {t.fail('Direct timeout')}, REQUEST_TIMEOUT)
   let data = await getPixels(arg, o)
   clearTimeout(to)
 
@@ -718,7 +678,7 @@ async function testSource(t, arg, o, fix=fixture) {
   t.ok(data.data[0], 'Ok async pixels')
 
   // second time (cache)
-  to = setTimeout(function () {t.fail('Direct second timeout')}, 1000)
+  to = setTimeout(function () {t.fail('Direct second timeout')}, REQUEST_TIMEOUT)
   let data2 = await getPixels(arg, o)
   clearTimeout(to)
   t.deepEqual(data.data, data2.data)
@@ -728,7 +688,7 @@ async function testSource(t, arg, o, fix=fixture) {
   t.ok(data2.data[0], 'Ok async pixels twice')
 
   // clip
-  to = setTimeout(function () {t.fail('Clip timeout')}, 1000)
+  to = setTimeout(function () {t.fail('Clip timeout')}, REQUEST_TIMEOUT)
   let clip = await getPixels(arg, x({clip: [1,1,3,3]}, o))
   clearTimeout(to)
 
@@ -739,7 +699,7 @@ async function testSource(t, arg, o, fix=fixture) {
   t.ok(clip.data[0], 'Ok clip pixels')
 
   // alltogether
-  to = setTimeout(function () {t.fail('All timeout')}, 1000)
+  to = setTimeout(function () {t.fail('All timeout')}, REQUEST_TIMEOUT)
   var list = await getPixels.all([
     o,
     x({clip: [1,1,3,3]}, o)

@@ -8,7 +8,7 @@
   },
   "browser": {
     "./lib/url": "./lib/url-browser.js",
-    "./lib/default": "./lib/default-browser.js"
+    "./lib/raw": "./lib/raw-browser.js"
   },
   "browserify": {
     "transform": [
@@ -18,21 +18,29 @@
   "dependencies": {
     "arr-flatten": "^1.1.0",
     "arraybuffer-to-string": "^1.0.2",
+    "bmp-js": "^0.1.0",
+    "buffer-to-arraybuffer": "0.0.5",
     "buffer-to-uint8array": "^1.1.0",
     "clip-pixels": "^1.0.1",
     "es6-weak-map": "^2.0.2",
+    "fast-bmp": "^1.0.0",
     "flip-pixels": "^1.0.1",
     "image-type": "^3.0.0",
     "is-base64": "0.0.6",
     "is-blob": "^1.0.0",
     "is-browser": "^2.1.0",
+    "is-buffer": "^2.0.3",
     "is-plain-obj": "^1.1.0",
     "is-promise": "^2.1.0",
     "is-url": "^1.2.4",
+    "jpeg-js": "^0.3.4",
     "object-assign": "^4.1.1",
+    "omggif": "^1.0.9",
     "parse-rect": "^1.2.0",
+    "pngjs": "^3.3.3",
     "primitive-pool": "^1.0.0",
-    "string-to-arraybuffer": "^1.0.1"
+    "string-to-arraybuffer": "^1.0.1",
+    "to-array-buffer": "^2.1.0"
   },
   "devDependencies": {
     "brfs": "^2.0.1",
@@ -73,6 +81,7 @@
     "node",
     "ndarray",
     "pxls",
+    "get-pixels",
     "get-pixel-data",
     "get-image-pixels",
     "get-imagedata",

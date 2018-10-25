@@ -5,7 +5,65 @@ var fixture = {
 	height: 8,
 }
 
-fixture.canvas = drawToCanvas(fixture)
+fixture.canvas2d = drawToCanvas(fixture)
+
+
+var isBrowser = require('is-browser')
+var gl
+if (!isBrowser) {
+    gl = require('gl')(fixture.width, fixture.height, {preserveDrawingBuffer: true})
+}
+else {
+    var canvas = document.createElement('canvas')
+    canvas.width = fixture.width
+    canvas.height = fixture.height
+    gl = canvas.getContext('webgl', {preserveDrawingBuffer: true})
+}
+
+var regl = require('regl')({gl: gl})
+var draw = regl({
+vert: `
+  precision mediump float;
+  attribute vec2 position;
+  attribute vec4 color;
+  uniform vec2 shape;
+  varying vec4 fragColor;
+  void main() {
+    gl_PointSize = 1.;
+    gl_Position = vec4( 2. * (position + .5) / shape - 1., 0, 1);
+    gl_Position.y *= -1.;
+    fragColor = color / 255.;
+  }`,
+frag: `
+precision mediump float;
+varying vec4 fragColor;
+void main () {
+  gl_FragColor = fragColor;
+}`,
+attributes: {
+  color: [
+    0,0,0,255, 255,0,0,255, 255,255,0,255, 255,0,255,255,
+    0,255,0,255, 0,255,255,255,
+    0,0,255,255
+  ],
+  position: [
+    0,0, 1,0, 2,0, 3,0,
+    0,1, 1,1,
+    0,2
+  ]
+},
+uniforms: {
+  shape: [16, 8]
+},
+primitive: 'points',
+count: 7
+})
+draw()
+
+fixture.gl = gl
+fixture.regl = regl
+fixture.canvasGl = gl.canvas
+
 
 // fixture.pngDataURL = drawToCanvas(fixture).toDataURL('image/png')
 // fixture.jpgDataURL = drawToCanvas(fixture).toDataURL('image/jpeg', 1)
