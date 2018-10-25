@@ -193,7 +193,22 @@ t(`<video>`, async t => {
 
   t.end()
 })
-t.skip(`Video bad src`)
+t(`Video bad src`, async t => {
+  if (!isBrowser) return t.end()
+  t.plan(1)
+
+  let el = document.createElement('div')
+  el.innerHTML = `<video src="./test/xxx.webm"></video>`
+
+  try {
+    await getPixels(el.firstChild)
+  }
+  catch (e) {
+    t.ok(e)
+  }
+
+  t.end()
+})
 t(`Image`, async t => {
   if (!isBrowser) return t.end()
   t.plan(ASSERT_N)
@@ -202,7 +217,21 @@ t(`Image`, async t => {
   await testSource(t, img)
   t.end()
 })
-t.skip(`Image bad src`)
+t(`Image bad src`, async t => {
+  if (!isBrowser) return t.end()
+  t.plan(1)
+  let img = new Image()
+  img.src = 'xxx.png'
+
+  try {
+    await getPixels(img)
+  }
+  catch (e) {
+    t.ok(e)
+  }
+
+  t.end()
+})
 
 t(`ImageData`, async t => {
   if (!isBrowser) return t.end()
@@ -566,17 +595,47 @@ t('not an image url', async t => {
   t.end()
 })
 
-
-// TODO
-// decode
-t('png')
-t('jpg')
-t('gif')
-t('bmp')
 t.skip('#img-el', async t => {
 })
-t.skip('changed URL contents', async t => {
-  // TODO: create tmp file, rewrite it
+t('changed URL contents', async t => {
+  if (isBrowser) return t.end()
+
+  var save = require('save-file')
+  var tmp = require('temp-dir')
+  var path = require('path')
+
+  var data1 = fixture.pngDataURL
+  var data2 = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAICAYAAADwdn+XAAAAMklEQVQoU2P8z8DwnwEEQCQjnAcWIgYwMvwHaQUTZAFGBob///+TqxvsaIq0jxoAijYA90Mg6YIzCEUAAAAASUVORK5CYII=`
+
+  // cached
+  await save(
+    s2ab(data1),
+    path.join(tmp, 'a.png')
+  )
+  var result1 = await getPixels(path.join(tmp, 'a.png'))
+  t.deepEqual(result1.data, fixture.data)
+  await save(
+    s2ab(data2),
+    path.join(tmp, 'a.png')
+  )
+  var result2 = await getPixels(path.join(tmp, 'a.png'))
+  t.deepEqual(result2.data, result1.data)
+
+  // uncached
+  await save(
+    s2ab(data1),
+    path.join(tmp, 'b.png')
+  )
+  var result1 = await getPixels(path.join(tmp, 'b.png'), {cache: false})
+  t.deepEqual(result1.data, fixture.data)
+  await save(
+    s2ab(data2),
+    path.join(tmp, 'b.png')
+  )
+  var result2 = await getPixels(path.join(tmp, 'b.png'))
+  t.notDeepEqual(result2.data, result1.data)
+
+  t.end()
 })
 t.skip('URL timeout')
 t.skip('bad URL data')

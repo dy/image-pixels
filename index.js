@@ -206,7 +206,7 @@ function getPixels(src, o, cb) {
 				ok(src)
 			})
 			src.addEventListener('error', function(err) {
-				nok(err)
+				nok(new Error('Bad video src `' + src.src + '`'))
 			})
 		}).then(function (src) {
 			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})

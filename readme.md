@@ -38,7 +38,7 @@ Type | Meaning
 `File`, `Blob` | Encoded image data.
 `Canvas`, `Context2D` | 2D drawing context, browser-only.
 `WebGLContext` | GL context, node/browser.
-`Buffer`, `ArrayBuffer`, `Uint8Array`, `Uint8ClampedArray` | Raw or encoded pixel data. Raw data requires `options.shape`. For encoded data `options.type` can be provided in order to skip mime type detection.
+`Buffer`, `ArrayBuffer`, `Uint8Array`, `Uint8ClampedArray` | Raw or encoded pixel data. Raw data requires `options.shape`. For encoded data `options.type`skips mime type detection. Supported formats: `png`, `bmp`, `gif`, `jpg`.
 `Float32Array`, `Float64Array`, `Array`, `Array` of arrays | Float pixel data with values from `0..1` range.
 `Promise` | Promise expecting resolution to an image source.
 `ndarray` | [Ndarray](https://ghub.io/ndarray) container with pixel data, compatible with [get-pixels](https://ghub.io/get-pixels).
@@ -47,6 +47,7 @@ Type | Meaning
 `OffscreenCanvas` | [TODO]
 `Bitmaprenderer` | [TODO]
 `SourceBuffer`, `SourceBufferList` | [TODO]
+`Stream` | [TODO]
 options object | If `source` argument is omitted, it is taken from `options.source`, useful for `pixels.all`.
 
 #### `options`
@@ -74,15 +75,6 @@ var dict = await pixels({
 	c: {clip: [0,10,10,10]}
 }, {cache: true, source: atlas})
 ```
-
-#### Supported formats
-
-In browser any format suported by `<img>` is available.
-In node, the following formats are available:
-
-* `PNG`
-* `JPEG`
-* `GIF`
 
 ## Related packages
 

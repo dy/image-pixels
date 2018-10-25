@@ -74,12 +74,11 @@ fixture.jpgDataURL = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAE
 fixture.pngURL = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.png'
 fixture.jpgURL = 'https://raw.githubusercontent.com/dy/get-pixel-data/master/test/test_pattern.jpg'
 
-module.exports = fixture
 
 
 //draw buffer on the canvas
 function drawToCanvas({data, width, height}) {
-	if (typeof document === 'undefined') return null
+  if (typeof document === 'undefined') return null
 
     var canvas = document.createElement('canvas')
     canvas.width = width
@@ -92,3 +91,7 @@ function drawToCanvas({data, width, height}) {
     context.putImageData(idata, 0, 0)
     return canvas
 }
+
+fixture.draw = drawToCanvas
+
+module.exports = fixture
