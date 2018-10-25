@@ -53,11 +53,11 @@ options object | If `source` argument is omitted, it is taken from `options.sour
 
 Option | Meaning
 ---|---
-`source` | Source data, one from the list above.
+`source` | Source data, one from the list above. Applicable for the case when the `source` argument is skipped or multiple sources are loaded.
 `shape` | Input data shape `[width, height]`, required for raw data. Alternately, `width` or `height` properties may be provided.
 `type`/`mime` | Mime type, optional for raw data.
 `clip` | Clipping rectangle, `[left, top, right, bottom]` or `{x?, y?, width?, height?}`.
-`cache` | Save source for faster later fetching.
+`cache` | Save source/url for faster subsequent loading.
 <!-- `time` | A frame # to read for animated image formats. -->
 <!-- `worker` | Delegate computation to worker, if available. Does not block main thread. -->
 

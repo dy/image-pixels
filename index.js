@@ -121,9 +121,10 @@ function getPixels(src, o, cb) {
 	// get cached instance
 	if (cache.has(p(src))) {
 		var result = cache.get(p(src))
+
 		if (clip.x || clip.y || clip.width !== result.width || clip.height !== result.height) {
 			result = new Uint8Array(clipPixels(result, [result.width, result.height], [clip.x, clip.y, clip.width, clip.height]))
-			result.data = result
+			result.data = result.subarray()
 			result.width = clip.width
 			result.height = clip.height
 		}
@@ -137,15 +138,15 @@ function getPixels(src, o, cb) {
 
 		// convert base64 to datauri
 		if (isBase64(src) && !/^data:/i.test(src)) {
-			var buf = new Uint8Array(s2ab(src))
+			src = new Uint8Array(s2ab(src))
 
-			return Promise.resolve(loadRaw(buf, {type: type, shape: [width, height], clip: clip}))
+			return Promise.resolve(loadRaw(src, {type: type, shape: [width, height], clip: clip}))
 		}
 
 		// url, path, datauri
-		return loadUrl(src, clip).then(function (data) {
-			captureShape(data)
-			return loadRaw(data, {type: type, shape: [width, height], clip: clip})
+		return loadUrl(src, clip).then(function (src) {
+			captureShape(src)
+			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
 		})
 	}
 
@@ -249,6 +250,18 @@ function getPixels(src, o, cb) {
 		// SVG had width as object
 		if (!width || typeof width !== 'number') width = container && container.shape && container.shape[0] || container.width || container.w || container.drawingBufferWidth
 		if (!height || typeof height !== 'number') height = container && container.shape && container.shape[1] || container.height || container.h || container.drawingBufferHeight
+	}
+
+	// cache data, return promise
+	function cached (source) {
+		return function (data) {
+			return Promise.resolve(data).then(function (data) {
+				if (!o || o.cache !== false) {
+					cache.set(p(source), data)
+				}
+				return data
+			})
+		}
 	}
 }
 
