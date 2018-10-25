@@ -11,8 +11,9 @@ var p = require('primitive-pool')
 var WeakMap = require('es6-weak-map')
 var clipPixels = require('clip-pixels')
 var isBrowser = require('is-browser')
-var loadURL = require('./lib/url')
-var readPixelData = require('./lib/default')
+var loadUrl = require('./lib/url')
+var loadRaw = require('./lib/raw')
+var loadGl = require('./lib/gl')
 
 
 // cache of data depending on source
@@ -135,13 +136,13 @@ function getPixels(src, o, cb) {
 		if (isBase64(src) && !/^data:/i.test(src)) {
 			var buf = new Uint8Array(toab(src))
 
-			return Promise.resolve(readPixelData(buf, {type: type, shape: [width, height], clip: clip}))
+			return Promise.resolve(loadRaw(buf, {type: type, shape: [width, height], clip: clip}))
 		}
 
 		// url, path, datauri
-		return loadURL(src, clip).then(function (data) {
+		return loadUrl(src, clip).then(function (data) {
 			captureShape(data)
-			return readPixelData(data, {type: type, shape: [width, height], clip: clip})
+			return loadRaw(data, {type: type, shape: [width, height], clip: clip})
 		})
 	}
 
@@ -156,16 +157,16 @@ function getPixels(src, o, cb) {
 	if (src.tagName === 'PICTURE') src = src.querySelector('img')
 
 	// <img>
-	if (src instanceof Image) {
+	if (global.Image && src instanceof Image) {
 		if (src.complete) {
 			captureShape(src)
-			return Promise.resolve(readPixelData(src, {type: type, shape: [width, height], clip: clip}))
+			return Promise.resolve(loadRaw(src, {type: type, shape: [width, height], clip: clip}))
 		}
 
 		return new Promise(function (ok, err) {
 			src.addEventListener('load', function () {
 				captureShape(src)
-				ok(readPixelData(src, {type: type, shape: [width, height], clip: clip}))
+				ok(loadRaw(src, {type: type, shape: [width, height], clip: clip}))
 			})
 			src.addEventListener('error', function(err) {
 				nok(err)
@@ -174,22 +175,23 @@ function getPixels(src, o, cb) {
 	}
 
 	// <video>
-	if (src instanceof HTMLMediaElement) {
+	if (global.HTMLMediaElement && src instanceof HTMLMediaElement) {
 		if (src.readyState) {
 			captureShape({w: src.videoWidth, h: src.videoHeight})
-			return Promise.resolve(readPixelData(src, {type: type, shape: [width, height], clip: clip}))
+			return Promise.resolve(loadRaw(src, {type: type, shape: [width, height], clip: clip}))
 		}
 
 		return new Promise(function (ok, err) {
 			src.addEventListener('loadeddata', function () {
 				captureShape({w: src.videoWidth, h: src.videoHeight})
-				ok(readPixelData(src, {type: type, shape: [width, height], clip: clip}))
+				ok(loadRaw(src, {type: type, shape: [width, height], clip: clip}))
 			})
 			src.addEventListener('error', function(err) {
 				nok(err)
 			})
 		})
 	}
+
 
 	// any other source, inc. unresolved promises
 	return Promise.resolve(src).then(function (src) {
@@ -203,7 +205,11 @@ function getPixels(src, o, cb) {
 		}
 
 		// retrieve canvas from contexts
-		var ctx = src._gl || src.gl || src.context || src.ctx
+		var ctx = src.readPixels ? src : src._gl || src.gl || src.context || src.ctx
+
+		// WebGL context directly
+		if (ctx && ctx.readPixels) return loadGl(ctx, {type: type, shape: [width, height], clip: clip})
+
 		src = ctx && ctx.canvas || src.canvas || src
 
 		captureShape(src)
@@ -211,7 +217,7 @@ function getPixels(src, o, cb) {
 		src = src.data || src.buffer || src._data || src
 		captureShape(src)
 
-		return readPixelData(src, {type: type, shape: [width, height], clip: clip})
+		return loadRaw(src, {type: type, shape: [width, height], clip: clip})
 	})
 
 	// try to figure out width/height from container

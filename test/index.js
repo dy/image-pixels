@@ -13,6 +13,7 @@ var regl = require('regl')
 var a = require('assert')
 var getNdPixels = require('get-pixels')
 var isOnline = require('is-online')
+var isBrowser = require('is-browser')
 
 var clipFix = {
   data: [
@@ -87,6 +88,8 @@ t('raw pixels base64', async t => {
 
 // DOMs
 t(`<img>`, async t => {
+  if (!isBrowser) return t.end()
+
   t.plan(ASSERT_N)
   let img = document.createElement('img')
   img.src = './test/test_pattern.png'
@@ -94,6 +97,7 @@ t(`<img>`, async t => {
   t.end()
 })
 t(`<image>`, async t => {
+  if (!isBrowser) return t.end()
   t.plan(ASSERT_N)
   let el = document.createElement('div')
   el.innerHTML = `<svg width="200" height="200"
@@ -105,6 +109,7 @@ t(`<image>`, async t => {
   t.end()
 })
 t(`<video>`, async t => {
+  if (!isBrowser) return t.end()
   t.plan(ASSERT_N)
   let el = document.createElement('div')
   el.innerHTML = `<video src="./test/stream_of_water.webm"></video>`
@@ -116,6 +121,7 @@ t(`<video>`, async t => {
   t.end()
 })
 t(`Image`, async t => {
+  if (!isBrowser) return t.end()
   t.plan(ASSERT_N)
   let img = new Image
   img.src = './test/test_pattern.png'
@@ -123,6 +129,7 @@ t(`Image`, async t => {
   t.end()
 })
 t(`ImageData`, async t => {
+  if (!isBrowser) return t.end()
   t.plan(ASSERT_N)
   var context = document.createElement('canvas').getContext('2d')
   var idata = context.createImageData(fixture.width, fixture.height)
@@ -134,6 +141,7 @@ t(`ImageData`, async t => {
   t.end()
 })
 t(`ImageBitmap`, async t => {
+  if (!isBrowser) return t.end()
   t.plan(ASSERT_N * 2)
   var canvas = fixture.canvas
   let bm = createImageBitmap(canvas)
@@ -145,6 +153,7 @@ t(`ImageBitmap`, async t => {
   t.end()
 })
 t(`File, Blob`, async t => {
+  if (!isBrowser) return t.end()
   t.plan(ASSERT_N * 2)
 
   await testSource(t, new File([pngFixData], 'file.png'))
@@ -153,6 +162,7 @@ t(`File, Blob`, async t => {
   t.end()
 })
 t(`Canvas/Context2D`, async t => {
+  if (!isBrowser) return t.end()
   t.plan(ASSERT_N * 2)
   var canvas = fixture.canvas
   await testSource(t, canvas)
@@ -162,12 +172,18 @@ t(`Canvas/Context2D`, async t => {
   t.end()
 })
 t(`Canvas/WebGLContext`, async t => {
-  t.plan(ASSERT_N * 3)
+  var gl
+  if (!isBrowser) {
+    gl = require('gl')(fixture.width, fixture.height)
+  }
+  else {
+    var canvas = document.createElement('canvas')
+    canvas.width = fixture.width
+    canvas.height = fixture.height
+    gl = canvas.getContext('webgl')
+  }
 
-  var canvas = document.createElement('canvas')
-  canvas.width = fixture.width
-  canvas.height = fixture.height
-  var _regl = regl({canvas})
+  var _regl = regl({gl: gl})
   var draw = _regl({
     vert: `
       precision mediump float;
@@ -207,15 +223,22 @@ t(`Canvas/WebGLContext`, async t => {
   })
   draw()
 
-  await testSource(t, canvas)
-  await testSource(t, canvas.getContext('webgl'))
+  if (isBrowser) {
+    t.plan(ASSERT_N * 3)
+    await testSource(t, canvas)
+    await testSource(t, canvas.getContext('webgl'))
+  }
+  else {
+    t.plan(ASSERT_N * 2)
+    await testSource(t, gl)
+  }
   await testSource(t, _regl)
 
   t.end()
 })
 
 // buffers
-t(`Buffer`, async t => {
+t.only(`Buffer`, async t => {
   t.plan(ASSERT_N + 1)
 
   var buf = new Buffer(fixture.data)
@@ -690,7 +713,6 @@ async function testSource(t, arg, o, fix=fixture) {
   //   var val = fix.data[i]
   //   if (fix.data[i] != data.data[i]) console.log(i, fix.data[i], data.data[i])
   // }
-
   fix.data ?
   t.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .006}), 0, 'Ok async pixels') :
   t.ok(data.data[0], 'Ok async pixels')
