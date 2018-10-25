@@ -84,7 +84,11 @@ In node, the following formats are available:
 * `JPEG`
 * `GIF`
 
-## Related
+## Related packages
+
+* [pixelmatch](https://ghub.io/pixelmatch) − compare if pixel images are equal.
+
+## Similar packages
 
 * [get-pixels](https://ghub.io/get-pixels) − get ndarray with pixel data, limited set of sources.
 * [get-image-pixels](https://ghub.io/get-image-pixels) − get pixel data for Canvas/Image/Video elements, browser-only.
