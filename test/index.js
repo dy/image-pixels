@@ -13,6 +13,11 @@ var getNdPixels = require('get-pixels')
 var isOnline = require('is-online')
 var isBrowser = require('is-browser')
 
+if (!isBrowser) {
+  // var { JSDOM } = require('jsdom')
+  // var { window } = new JSDOM(`<!doctype html>`)
+}
+
 var clipFix = {
   data: [
     0,255,255,255,     255,255,255,255,
@@ -161,8 +166,8 @@ t('raw pixels base64', async t => {
 })
 // DOMs
 t(`<img>`, async t => {
+  //TODO: add node test
   if (!isBrowser) return t.end()
-
   t.plan(ASSERT_N)
   let img = document.createElement('img')
   img.src = './test/test_pattern.png'

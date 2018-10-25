@@ -150,67 +150,69 @@ function getPixels(src, o, cb) {
 		})
 	}
 
-	// SVG Image
-	if (global.SVGImageElement && src instanceof SVGImageElement) {
-		var url = src.getAttribute('xlink:href')
-		src = new Image()
-		src.src = url
-		if (cached = checkCached(url)) return cached
-	}
-
-	// fetch closest image/video
-	if (src.tagName === 'PICTURE') {
-		src = src.querySelector('img')
-		if (cached = checkCached(src)) return cached
-	}
-
-	// <img>
-	if (global.Image && src instanceof Image) {
-		if (cached = checkCached(src.src)) return cached
-
-		cacheAs.push(src.src)
-
-		if (src.complete) {
-			captureShape(src)
-			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
+	if (src.tagName) {
+		// SVG Image
+		if (src.tagName.toLowerCase() === 'image') {
+			var url = src.getAttribute('xlink:href')
+			src = new Image()
+			src.src = url
+			if (cached = checkCached(url)) return cached
 		}
 
-		return new Promise(function (ok, nok) {
-			src.addEventListener('load', function () {
+		// fetch closest image/video
+		if (src.tagName.toLowerCase() === 'picture') {
+			src = src.querySelector('img')
+			if (cached = checkCached(src)) return cached
+		}
+
+		// <img>
+		if (src.tagName.toLowerCase() === 'img') {
+			if (cached = checkCached(src.src)) return cached
+
+			cacheAs.push(src.src)
+
+			if (src.complete) {
 				captureShape(src)
-				ok(src)
+				return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
+			}
+
+			return new Promise(function (ok, nok) {
+				src.addEventListener('load', function () {
+					captureShape(src)
+					ok(src)
+				})
+				src.addEventListener('error', function(err) {
+					nok(err)
+				})
+			}).then(function (src) {
+				return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
 			})
-			src.addEventListener('error', function(err) {
-				nok(err)
-			})
-		}).then(function (src) {
-			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
-		})
-	}
-
-	// <video>
-	if (global.HTMLMediaElement && src instanceof HTMLMediaElement) {
-		if (cached = checkCached(src.src)) return cached
-
-		// FIXME: possibly cache specific frame
-		cacheAs.push(src.src)
-
-		if (src.readyState) {
-			captureShape({w: src.videoWidth, h: src.videoHeight})
-			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
 		}
 
-		return new Promise(function (ok, nok) {
-			src.addEventListener('loadeddata', function () {
+		// <video>
+		if (global.HTMLMediaElement && src instanceof HTMLMediaElement) {
+			if (cached = checkCached(src.src)) return cached
+
+			// FIXME: possibly cache specific frame
+			cacheAs.push(src.src)
+
+			if (src.readyState) {
 				captureShape({w: src.videoWidth, h: src.videoHeight})
-				ok(src)
+				return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
+			}
+
+			return new Promise(function (ok, nok) {
+				src.addEventListener('loadeddata', function () {
+					captureShape({w: src.videoWidth, h: src.videoHeight})
+					ok(src)
+				})
+				src.addEventListener('error', function(err) {
+					nok(new Error('Bad video src `' + src.src + '`'))
+				})
+			}).then(function (src) {
+				return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
 			})
-			src.addEventListener('error', function(err) {
-				nok(new Error('Bad video src `' + src.src + '`'))
-			})
-		}).then(function (src) {
-			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
-		})
+		}
 	}
 
 
