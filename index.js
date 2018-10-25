@@ -235,7 +235,6 @@ function getPixels(src, o, cb) {
 
 		// raw data container
 		captureShape(src)
-
 		if (src.data || src._data || src.buffer || src instanceof ArrayBuffer) {
 			src = new Uint8Array(toab(src))
 			return loadRaw(src, {type: type, shape: [width, height], clip: clip})

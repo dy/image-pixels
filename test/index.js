@@ -143,7 +143,7 @@ t(`ImageData`, async t => {
 t(`ImageBitmap`, async t => {
   if (!isBrowser) return t.end()
   t.plan(ASSERT_N * 2)
-  var canvas = fixture.canvas
+  var canvas = fixture.canvas2d
   let bm = createImageBitmap(canvas)
   await testSource(t, bm)
 
@@ -164,10 +164,10 @@ t(`File, Blob`, async t => {
 t(`Canvas/Context2D`, async t => {
   if (!isBrowser) return t.end()
   t.plan(ASSERT_N * 2)
-  var canvas = fixture.canvas
+  var canvas = fixture.canvas2d
   await testSource(t, canvas)
 
-  var canvas = fixture.canvas
+  var canvas = fixture.canvas2d
   await testSource(t, canvas.getContext('2d'))
   t.end()
 })
@@ -601,7 +601,7 @@ t('get-pixels-bmp', async function(t) {
   })
 })
 
-t.only('data url', async function(t) {
+t('data url', async function(t) {
   var url = 'data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7'
   getPixels(url, function(err, data) {
     if(err) {
