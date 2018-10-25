@@ -2,13 +2,10 @@
 
 var isObj = require('is-plain-obj')
 var isBase64 = require('is-base64')
-var imgType = require('image-type')
 var s2ab = require('string-to-arraybuffer')
 var rect = require('parse-rect')
 var extend = require('object-assign')
 var isBlob = require('is-blob')
-var p = require('primitive-pool')
-var WeakMap = require('es6-weak-map')
 var clipPixels = require('clip-pixels')
 var isBrowser = require('is-browser')
 var toab = require('to-array-buffer')
@@ -16,16 +13,13 @@ var flat = require('arr-flatten')
 var loadUrl = require('./lib/url')
 var loadRaw = require('./lib/raw')
 var loadGl = require('./lib/gl')
-
-
-// cache of data depending on source
-var cache = new WeakMap()
+var cache = require('./lib/cache')
 
 
 module.exports = getPixels
 module.exports.get = getPixels
 module.exports.all = getPixelsAll
-
+module.exports.cache = cache
 
 function getPixelsAll (src, o, cb) {
 	if (!src) return null
@@ -100,53 +94,59 @@ function getPixels(src, o, cb) {
 		// nested source
 		if (isObj(src)) src = src.source || src.src || src
 
-		if (!src) src = {}
+		if (!src) {
+			o.cache = false
+			src = {}
+		}
 	}
 
 	// detect clipping
 	var width, height
 	var clip = o.clip && rect(o.clip) || {x: 0, y: 0}
 	var type = o.type || o.mime
+
+	// turn cache on by default
+	if (o.cache == null) o.cache = true
+
+	var cacheAs = []
 	captureShape(o)
 	captureShape(src)
+
+	// check if cached instance is available
+	var cached
+
+	if (cached = checkCached(src)) return cached
 
 	// File & Blob
 	if (isBrowser && (isBlob(src) || (src instanceof File))) {
 		// FIXME: try to use createImageBitmap for Blob
 		src = URL.createObjectURL(src)
+		cacheAs.push(src)
+
+		if (cached = checkCached(src)) return cached
 
 		// TODO: detect raw data
-	}
-
-	// get cached instance
-	if (cache.has(p(src))) {
-		var result = cache.get(p(src))
-
-		if (clip.x || clip.y || clip.width !== result.width || clip.height !== result.height) {
-			result = new Uint8Array(clipPixels(result, [result.width, result.height], [clip.x, clip.y, clip.width, clip.height]))
-			result.data = result.subarray()
-			result.width = clip.width
-			result.height = clip.height
-		}
-
-		return Promise.resolve(result)
 	}
 
 	// handle source type
 	if (typeof src === 'string') {
 		if (!src) return Promise.reject(new Error('Bad URL'))
 
+		cacheAs.push(src)
+
 		// convert base64 to datauri
 		if (isBase64(src) && !/^data:/i.test(src)) {
 			src = new Uint8Array(s2ab(src))
 
-			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
+			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
 		}
 
 		// url, path, datauri
 		return loadUrl(src, clip).then(function (src) {
+			if (cached = checkCached(src)) return cached
+
 			captureShape(src)
-			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
+			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
 		})
 	}
 
@@ -155,19 +155,27 @@ function getPixels(src, o, cb) {
 		var url = src.getAttribute('xlink:href')
 		src = new Image()
 		src.src = url
+		if (cached = checkCached(url)) return cached
 	}
 
 	// fetch closest image/video
-	if (src.tagName === 'PICTURE') src = src.querySelector('img')
+	if (src.tagName === 'PICTURE') {
+		src = src.querySelector('img')
+		if (cached = checkCached(src)) return cached
+	}
 
 	// <img>
 	if (global.Image && src instanceof Image) {
+		if (cached = checkCached(src.src)) return cached
+
+		cacheAs.push(src.src)
+
 		if (src.complete) {
 			captureShape(src)
-			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
+			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
 		}
 
-		return new Promise(function (ok, err) {
+		return new Promise(function (ok, nok) {
 			src.addEventListener('load', function () {
 				captureShape(src)
 				ok(src)
@@ -176,18 +184,23 @@ function getPixels(src, o, cb) {
 				nok(err)
 			})
 		}).then(function (src) {
-			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
+			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
 		})
 	}
 
 	// <video>
 	if (global.HTMLMediaElement && src instanceof HTMLMediaElement) {
+		if (cached = checkCached(src.src)) return cached
+
+		// FIXME: possibly cache specific frame
+		cacheAs.push(src.src)
+
 		if (src.readyState) {
 			captureShape({w: src.videoWidth, h: src.videoHeight})
-			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
+			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
 		}
 
-		return new Promise(function (ok, err) {
+		return new Promise(function (ok, nok) {
 			src.addEventListener('loadeddata', function () {
 				captureShape({w: src.videoWidth, h: src.videoHeight})
 				ok(src)
@@ -196,13 +209,18 @@ function getPixels(src, o, cb) {
 				nok(err)
 			})
 		}).then(function (src) {
-			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
+			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
 		})
 	}
 
 
 	// any other source, inc. unresolved promises
+	cacheAs.push(src)
 	return Promise.resolve(src).then(function (src) {
+		if (cached = checkCached(src)) return cached
+
+		cacheAs.push(src)
+
 		// float data → uint data
 		if ((src instanceof Float32Array) || (src instanceof Float64Array)) {
 			var buf = new Uint8Array(src.length)
@@ -228,7 +246,6 @@ function getPixels(src, o, cb) {
 			captureShape(ctx)
 			// WebGL context directly
 			if (ctx.readPixels) {
-
 				return loadGl(ctx, {type: type, shape: [width, height], clip: clip})
 			}
 
@@ -240,13 +257,16 @@ function getPixels(src, o, cb) {
 
 		// raw data container
 		captureShape(src)
+
 		if (src.data || src._data || src.buffer || src instanceof ArrayBuffer) {
-			src = new Uint8Array(toab(src))
-			return loadRaw(src, {type: type, shape: [width, height], clip: clip})
+			src = toab(src)
+			cacheAs.push(src)
+			src = new Uint8Array(src)
+			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
 		}
 
 		// any other source
-		return loadRaw(src, {type: type, shape: [width, height], clip: clip})
+		return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
 	})
 
 	// try to figure out width/height from container
@@ -254,6 +274,25 @@ function getPixels(src, o, cb) {
 		// SVG had width as object
 		if (!width || typeof width !== 'number') width = container && container.shape && container.shape[0] || container.width || container.w || container.drawingBufferWidth
 		if (!height || typeof height !== 'number') height = container && container.shape && container.shape[1] || container.height || container.h || container.drawingBufferHeight
+	}
+
+	function checkCached(src) {
+		// get cached instance
+		if (cache.get(src)) {
+			var result = cache.get(src) || cache.get(src.buffer)
+
+			if (clip.x || clip.y ||
+				(clip.width && clip.width !== result.width) ||
+				(clip.height && clip.height !== result.height)
+			) {
+				result = new Uint8Array(clipPixels(result, [result.width, result.height], [clip.x, clip.y, clip.width, clip.height]))
+				result.data = result.subarray()
+				result.width = clip.width
+				result.height = clip.height
+			}
+
+			return Promise.resolve(result)
+		}
 	}
 }
 

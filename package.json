@@ -38,7 +38,7 @@
     "omggif": "^1.0.9",
     "parse-rect": "^1.2.0",
     "pngjs": "^3.3.3",
-    "primitive-pool": "^1.0.0",
+    "primitive-pool": "^1.1.0",
     "string-to-arraybuffer": "^1.0.1",
     "to-array-buffer": "^2.1.0"
   },
