@@ -43,6 +43,7 @@
   },
   "devDependencies": {
     "brfs": "^2.0.1",
+    "del": "^3.0.0",
     "get-pixels": "^3.3.2",
     "gl": "^4.1.1",
     "is-online": "^7.0.0",

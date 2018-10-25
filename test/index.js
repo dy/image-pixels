@@ -603,6 +603,7 @@ t('changed URL contents', async t => {
   var save = require('save-file')
   var tmp = require('temp-dir')
   var path = require('path')
+  var del = require('del')
 
   var data1 = fixture.pngDataURL
   var data2 = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAICAYAAADwdn+XAAAAMklEQVQoU2P8z8DwnwEEQCQjnAcWIgYwMvwHaQUTZAFGBob///+TqxvsaIq0jxoAijYA90Mg6YIzCEUAAAAASUVORK5CYII=`
@@ -634,6 +635,9 @@ t('changed URL contents', async t => {
   )
   var result2 = await getPixels(path.join(tmp, 'b.png'))
   t.notDeepEqual(result2.data, result1.data)
+
+
+  del([path.join(tmp, 'b.png'), path.join(tmp, 'a.png')])
 
   t.end()
 })
