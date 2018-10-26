@@ -237,7 +237,6 @@ t(`Image bad src`, async t => {
 
   t.end()
 })
-
 t(`ImageData`, async t => {
   if (!isBrowser) return t.end()
   t.plan(ASSERT_N)
@@ -250,7 +249,6 @@ t(`ImageData`, async t => {
   await testSource(t, idata)
   t.end()
 })
-
 t(`ImageBitmap`, async t => {
   if (!isBrowser) return t.end()
   t.plan(ASSERT_N * 2)
@@ -312,7 +310,6 @@ t(`Buffer`, async t => {
   await testSource(t, buf, {width: fixture.width, height: fixture.height})
   t.end()
 })
-
 t(`ArrayBuffer`, async t => {
   t.plan(ASSERT_N + 1)
   try {
@@ -325,7 +322,6 @@ t(`ArrayBuffer`, async t => {
   await testSource(t, fixture.data.buffer, {width: fixture.width, height: fixture.height})
   t.end()
 })
-
 t(`Uint8Array`, async t => {
   t.plan(ASSERT_N + 1)
   try {
@@ -497,7 +493,9 @@ t(`ndarray`, async t => {
 
 
 t(`multiple sources: list`, async t => {
+  if (!(await online())) return t.end()
   t.plan(8)
+
 
   // different sources list
   let list = await getPixels.all([
@@ -519,8 +517,8 @@ t(`multiple sources: list`, async t => {
 
   t.end()
 })
-
 t('multiple sources: dict', async t => {
+  if (!(await online())) return t.end()
   t.plan(3)
 
   // different source dict
@@ -536,8 +534,8 @@ t('multiple sources: dict', async t => {
 
   t.end()
 })
-
 t('multiple source error', async t => {
+  if (!(await online())) return t.end()
   t.plan(2)
 
   await getPixels.all([
@@ -599,7 +597,6 @@ t('not an image url', async t => {
 
   t.end()
 })
-
 t.skip('#img-el', async t => {
 })
 t('changed URL contents', async t => {
@@ -687,7 +684,16 @@ t.skip(`OffscreenCanvas, bitmaprenderer`, async t => {
   // one.transferImageBitmap(bm);
 })
 
+t('do not cache arrays', async t => {
+  var data = fixture.data.slice()
+  var result1 = await getPixels({data, w: fixture.width, h: fixture.height})
+  data[10] = 255
+  var result2 = await getPixels({data, w: fixture.width, h: fixture.height})
 
+  t.notDeepEqual(result1.data, result2.data)
+
+  t.end()
+})
 
 // get-pixels cases
 function test_image (t, pixels) {

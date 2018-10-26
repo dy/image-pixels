@@ -21,6 +21,7 @@ module.exports.get = getPixels
 module.exports.all = getPixelsAll
 module.exports.cache = cache
 
+
 function getPixelsAll (src, o, cb) {
 	if (!src) return null
 
@@ -89,10 +90,10 @@ function getPixels(src, o, cb) {
 	else if (Array.isArray(o)) o = {shape: o}
 	if (isObj(src) || !src) {
 		o = extend(src || {}, o)
-		src = o.source || o.src
+		src = o.source || o.src || o.raw || o.data || o.pixels
 
 		// nested source
-		if (isObj(src)) src = src.source || src.src || src
+		if (isObj(src)) src = src.source || src.src || src.raw || src.data || src.pixels || src
 
 		if (!src) {
 			o.cache = false
@@ -217,11 +218,10 @@ function getPixels(src, o, cb) {
 
 
 	// any other source, inc. unresolved promises
-	cacheAs.push(src)
+	// NOTE: we should not cache result by this type of data:
+	// eg. user may want to change array contents
 	return Promise.resolve(src).then(function (src) {
 		if (cached = checkCached(src)) return cached
-
-		cacheAs.push(src)
 
 		// float data → uint data
 		if ((src instanceof Float32Array) || (src instanceof Float64Array)) {

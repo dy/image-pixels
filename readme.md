@@ -83,6 +83,7 @@ var dict = await pixels({
 ## Similar packages
 
 * [get-pixels](https://ghub.io/get-pixels) − get ndarray with pixel data, limited set of sources.
+* [ndarray-from-image](https://github.com/thibauts/ndarray-from-image) − get-pixels with dtype.
 * [get-image-pixels](https://ghub.io/get-image-pixels) − get pixel data for Canvas/Image/Video elements, browser-only.
 * [get-image-data](https://ghub.io/get-image-data) − get image data for Canvas/Image/Video elements, browser-only.
 * [image-equal](https://ghub.io/image-equal) − assert image with baseline.
