@@ -1,5 +1,5 @@
 {
-  "name": "pxls",
+  "name": "image-pixels",
   "version": "1.0.2",
   "description": "Read pixel data from any image source",
   "main": "index.js",
@@ -61,7 +61,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/dy/pxls.git"
+    "url": "git://github.com/dy/image-pixels.git"
   },
   "keywords": [
     "pixel",
@@ -82,7 +82,7 @@
     "get-pixels",
     "node",
     "ndarray",
-    "pxls",
+    "image-pixels",
     "get-pixels",
     "get-pixel-data",
     "get-image-pixels",
