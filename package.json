@@ -16,10 +16,10 @@
     ]
   },
   "dependencies": {
-    "brfs": "^2.0.1",
     "arr-flatten": "^1.1.0",
     "arraybuffer-to-string": "^1.0.2",
     "bmp-js": "^0.1.0",
+    "brfs": "^2.0.1",
     "buffer-to-arraybuffer": "0.0.5",
     "buffer-to-uint8array": "^1.1.0",
     "clip-pixels": "^1.0.1",
@@ -39,6 +39,7 @@
     "parse-rect": "^1.2.0",
     "pngjs": "^3.3.3",
     "primitive-pool": "^1.1.0",
+    "request": "^2.88.0",
     "string-to-arraybuffer": "^1.0.1",
     "to-array-buffer": "^2.1.0"
   },
