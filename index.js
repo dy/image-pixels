@@ -16,13 +16,26 @@ var loadGl = require('./lib/gl')
 var cache = require('./lib/cache')
 
 
-module.exports = getPixels
-module.exports.get = getPixels
-module.exports.all = getPixelsAll
+module.exports = function (src, o, cb) {
+	// detect callback arg
+	if (typeof o === 'function') {
+		cb = o
+		o = isObj(src) ? src : null
+	}
+
+	return getPixels(src, o).then(function (data) {
+		// cache self pixel data
+		cache.set(data, data)
+		if (cb) cb(null, data)
+		return data
+	}, function (err) {
+		cb(err)
+	})
+}
+
 module.exports.cache = cache
 
-
-function getPixelsAll (src, o, cb) {
+module.exports.all = function getPixelsAll (src, o, cb) {
 	if (!src) return null
 
 	if (typeof o === 'function') {
@@ -68,22 +81,7 @@ function getPixelsAll (src, o, cb) {
 }
 
 
-function getPixels(src, o, cb) {
-	// detect callback arg
-	if (typeof o === 'function') {
-		cb = o
-		o = isObj(src) ? src : null
-	}
-
-	// intercept callback call
-	if (cb) return getPixels(src, o).then(function (data) {
-		cb(null, data)
-		return data
-	}, function (err) {
-		cb(err)
-	})
-
-
+function getPixels(src, o) {
 	// handle arguments
 	if (typeof o === 'string') o = {type: o}
 	else if (!o) o = {}
@@ -248,7 +246,9 @@ function getPixels(src, o, cb) {
 			captureShape(ctx)
 			// WebGL context directly
 			if (ctx.readPixels) {
-				return loadGl(ctx, {type: type, shape: [width, height], clip: clip})
+				var result = loadGl(ctx, {type: type, shape: [width, height], clip: clip})
+				if (o.cache) cache.set(result, result)
+				return result
 			}
 
 			// 2d and other contexts

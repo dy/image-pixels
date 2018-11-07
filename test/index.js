@@ -29,7 +29,7 @@ var clipFix = {
 var pngFixData = s2ab(fixture.pngDataURL)
 var pngFixURL = fixture.pngURL
 
-const ASSERT_N = 17
+const ASSERT_N = 19
 const REQUEST_TIMEOUT = 3000
 
 
@@ -52,6 +52,9 @@ async function testSource(t, arg, o, fix=fixture) {
   t.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .006}), 0, 'Ok async pixels') :
   t.ok(data.data[0], 'Ok async pixels')
 
+  let redata = await getPixels(data)
+  t.equal(redata, data, 'Repeat data')
+
   // second time (cache)
   to = setTimeout(function () {t.fail('Direct second timeout')}, REQUEST_TIMEOUT)
   let data2 = await getPixels(arg, o)
@@ -61,6 +64,9 @@ async function testSource(t, arg, o, fix=fixture) {
   t.equal(data2.height, fix.height)
   fix.data ? t.equal(match(data2.data, fix.data, null, fix.width, fix.height, {threshold: .006}), 0, 'Ok async pixels twice') :
   t.ok(data2.data[0], 'Ok async pixels twice')
+
+  let redata2 = await getPixels(data2)
+  t.equal(redata2, data2, 'Repeat data secondary')
 
   // clip
   to = setTimeout(function () {t.fail('Clip timeout')}, REQUEST_TIMEOUT)
@@ -695,6 +701,7 @@ t('do not cache arrays', async t => {
   t.end()
 })
 
+
 // get-pixels cases
 function test_image (t, pixels) {
   t.equal(match(pixels.data, fixture.data, null, fixture.width, fixture.height, {threshold: 0}), 0)
@@ -814,4 +821,3 @@ t('get-url gif img', async function(t) {
     t.end();
   });
 });
-

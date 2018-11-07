@@ -23,7 +23,7 @@ var [a, b, c] = await pixels.all([
 
 ## API
 
-### `{data, width, height} = await pixels(source, options?, cb?)`
+### `{data, width, height} = await pixels(source, options?)`
 
 Loads pixel data from a `source` based on options. Possibly provide a callback for old-style async calls. Function returns a promise that gets resolved once the source is ready, therefore it is predisposed for await call.
 
@@ -62,7 +62,7 @@ Option | Meaning
 <!-- `time` | A frame # to read for animated image formats. -->
 <!-- `worker` | Delegate computation to worker, if available. Does not block main thread. -->
 
-### `list|dict = await pixels.all(list|dict, options?, cb?)`
+### `list|dict = await pixels.all(list|dict, options?)`
 
 Load multiple sources or dict of sources in parallel. `options` can provide common for every source options.
 
@@ -78,7 +78,8 @@ var dict = await pixels({
 
 ## Related packages
 
-* [pixelmatch](https://ghub.io/pixelmatch) − compare if pixel images are equal.
+* [image-save](https://ghub.io/image-save) − save image/pixel data to a file, canvas or array.
+* [image-equal](https://ghub.io/image-equal) − assert image with baseline.
 
 ## Similar packages
 
@@ -86,7 +87,6 @@ var dict = await pixels({
 * [ndarray-from-image](https://github.com/thibauts/ndarray-from-image) − get-pixels with dtype.
 * [get-image-pixels](https://ghub.io/get-image-pixels) − get pixel data for Canvas/Image/Video elements, browser-only.
 * [get-image-data](https://ghub.io/get-image-data) − get image data for Canvas/Image/Video elements, browser-only.
-* [image-equal](https://ghub.io/image-equal) − assert image with baseline.
 
 ## License
 
