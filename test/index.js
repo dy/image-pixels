@@ -700,6 +700,13 @@ t('do not cache arrays', async t => {
 
   t.end()
 })
+t('error during processing', t => {
+  t.plan(1)
+  getPixels(/asd/).then(null, err => {
+    t.ok(err)
+    t.end()
+  })
+})
 
 
 // get-pixels cases

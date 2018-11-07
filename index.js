@@ -29,7 +29,8 @@ module.exports = function (src, o, cb) {
 		if (cb) cb(null, data)
 		return data
 	}, function (err) {
-		cb(err)
+		if (cb) cb(err)
+		throw err
 	})
 }
 
