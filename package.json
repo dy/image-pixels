@@ -23,8 +23,8 @@
     "buffer-to-arraybuffer": "0.0.5",
     "buffer-to-uint8array": "^1.1.0",
     "clip-pixels": "^1.0.1",
-    "es6-weak-map": "^2.0.2",
     "flip-pixels": "^1.0.1",
+    "image-decode": "^1.0.0",
     "image-type": "^3.0.0",
     "is-base64": "0.0.6",
     "is-blob": "^2.0.0",
@@ -40,8 +40,9 @@
     "pngjs": "^3.3.3",
     "primitive-pool": "^1.1.0",
     "request": "^2.88.0",
-    "string-to-arraybuffer": "^1.0.1",
-    "to-array-buffer": "^2.1.0"
+    "string-to-arraybuffer": "^1.0.2",
+    "to-array-buffer": "^2.1.0",
+    "weak-map": "^1.0.5"
   },
   "devDependencies": {
     "del": "^3.0.0",

@@ -690,6 +690,21 @@ t.skip(`OffscreenCanvas, bitmaprenderer`, async t => {
   // one.transferImageBitmap(bm);
 })
 
+t.skip('object with float data array', async t => {
+  // FIXME: probably this is normal behaviour
+  let data = [0,0,0,1, 1,1,1,1, 1,1,1,1, 0,0,0,1]
+
+  let px = await getPixels({
+    data: data,
+    width: 2,
+    height: 2
+  })
+
+  t.deepEqual(px.data, [0,0,0,255, 255,255,255,255, 255,255,255,255, 0,0,0,255])
+
+  t.end()
+})
+
 t('do not cache arrays', async t => {
   var data = fixture.data.slice()
   var result1 = await getPixels({data, w: fixture.width, h: fixture.height})

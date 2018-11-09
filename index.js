@@ -125,7 +125,7 @@ function getPixels(src, o) {
 
 		if (cached = checkCached(src)) return cached
 
-		// TODO: detect raw data
+		// TODO: detect raw data and decode here, possibly use array-buffer
 	}
 
 	// handle source type
