@@ -24,10 +24,16 @@ module.exports = function (src, o, cb) {
 	}
 
 	return getPixels(src, o).then(function (data) {
+		// convert result to imagedata
+		var idata = toImageData(data)
+
 		// cache self pixel data
-		cache.set(data, data)
-		if (cb) cb(null, data)
-		return data
+		if (!cache.get(idata)) {
+			cache.set(idata, idata)
+		}
+
+		if (cb) cb(null, idata)
+		return idata
 	}, function (err) {
 		if (cb) cb(err)
 		throw err
@@ -100,22 +106,24 @@ function getPixels(src, o) {
 		}
 	}
 
+	// turn cache on by default
+	if (o.cache == null) o.cache = true
+
 	// detect clipping
 	var width, height
 	var clip = o.clip && rect(o.clip) || {x: 0, y: 0}
 	var type = o.type || o.mime
 
-	// turn cache on by default
-	if (o.cache == null) o.cache = true
+	var cached
+
+	// check if cached instance is available
+	if (cached = checkCached(src, clip)) {
+		return Promise.resolve(cached)
+	}
 
 	var cacheAs = []
 	captureShape(o)
 	captureShape(src)
-
-	// check if cached instance is available
-	var cached
-
-	if (cached = checkCached(src)) return cached
 
 	// File & Blob
 	if (isBrowser && (isBlob(src) || (src instanceof File))) {
@@ -123,7 +131,7 @@ function getPixels(src, o) {
 		src = URL.createObjectURL(src)
 		cacheAs.push(src)
 
-		if (cached = checkCached(src)) return cached
+		if (cached = checkCached(src, clip)) return cached
 
 		// TODO: detect raw data and decode here, possibly use array-buffer
 	}
@@ -143,7 +151,7 @@ function getPixels(src, o) {
 
 		// url, path, datauri
 		return loadUrl(src, clip).then(function (src) {
-			if (cached = checkCached(src)) return cached
+			if (cached = checkCached(src, clip)) return cached
 
 			captureShape(src)
 			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
@@ -156,18 +164,18 @@ function getPixels(src, o) {
 			var url = src.getAttribute('xlink:href')
 			src = new Image()
 			src.src = url
-			if (cached = checkCached(url)) return cached
+			if (cached = checkCached(url, clip)) return cached
 		}
 
 		// fetch closest image/video
 		if (src.tagName.toLowerCase() === 'picture') {
 			src = src.querySelector('img')
-			if (cached = checkCached(src)) return cached
+			if (cached = checkCached(src, clip)) return cached
 		}
 
 		// <img>
 		if (src.tagName.toLowerCase() === 'img') {
-			if (cached = checkCached(src.src)) return cached
+			if (cached = checkCached(src.src, clip)) return cached
 
 			cacheAs.push(src.src)
 
@@ -191,7 +199,7 @@ function getPixels(src, o) {
 
 		// <video>
 		if (global.HTMLMediaElement && src instanceof HTMLMediaElement) {
-			if (cached = checkCached(src.src)) return cached
+			if (cached = checkCached(src.src, clip)) return cached
 
 			// FIXME: possibly cache specific frame
 			cacheAs.push(src.src)
@@ -220,7 +228,7 @@ function getPixels(src, o) {
 	// NOTE: we should not cache result by this type of data:
 	// eg. user may want to change array contents
 	return Promise.resolve(src).then(function (src) {
-		if (cached = checkCached(src)) return cached
+		if (cached = checkCached(src, clip)) return cached
 
 		// float data → uint data
 		if ((src instanceof Float32Array) || (src instanceof Float64Array)) {
@@ -248,7 +256,6 @@ function getPixels(src, o) {
 			// WebGL context directly
 			if (ctx.readPixels) {
 				var result = loadGl(ctx, {type: type, shape: [width, height], clip: clip})
-				if (o.cache) cache.set(result, result)
 				return result
 			}
 
@@ -278,24 +285,47 @@ function getPixels(src, o) {
 		if (!width || typeof width !== 'number') width = container && container.shape && container.shape[0] || container.width || container.w || container.drawingBufferWidth
 		if (!height || typeof height !== 'number') height = container && container.shape && container.shape[1] || container.height || container.h || container.drawingBufferHeight
 	}
+}
 
-	function checkCached(src) {
-		// get cached instance
-		if (cache.get(src)) {
-			var result = cache.get(src) || cache.get(src.buffer)
+function checkCached(src, clip) {
+	// get cached instance
+	if (cache.get(src)) {
+		var result = cache.get(src) || cache.get(src.buffer)
 
-			if (clip.x || clip.y ||
-				(clip.width && clip.width !== result.width) ||
-				(clip.height && clip.height !== result.height)
-			) {
-				result = new Uint8Array(clipPixels(result, [result.width, result.height], [clip.x, clip.y, clip.width, clip.height]))
-				result.data = result.subarray()
-				result.width = clip.width
-				result.height = clip.height
-			}
-
-			return Promise.resolve(result)
+		if (clip.x || clip.y ||
+			(clip.width && clip.width !== result.width) ||
+			(clip.height && clip.height !== result.height)
+		) {
+			result = new Uint8Array(clipPixels(result, [result.width, result.height], [clip.x, clip.y, clip.width, clip.height]))
+			result.data = result.subarray()
+			result.width = clip.width
+			result.height = clip.height
 		}
+
+		return Promise.resolve(result)
 	}
 }
 
+
+var canvas, context
+var idataCache = new WeakMap
+function toImageData (data) {
+	if (!isBrowser) return data
+
+	if (!context) {
+		canvas = document.createElement('canvas')
+		context = canvas.getContext('2d')
+	}
+
+	if (idataCache.has(data)) {
+		return idataCache.get(data)
+	}
+
+	var idata = context.createImageData(data.width, data.height)
+	idata.data.set(data.data)
+
+	idataCache.set(data, idata)
+	idataCache.set(idata, idata)
+
+	return idata
+}

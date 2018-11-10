@@ -27,6 +27,14 @@ var [a, b, c] = await pixels.all([
 
 Loads pixel data from a `source` based on options. Possibly provide a callback for old-style async calls. Function returns a promise that gets resolved once the source is ready, therefore it is predisposed for await call.
 
+In browser result is `ImageData` object to easily output to context:
+
+```js
+document.body.appendChild(document.createElement('canvas'))
+	.getContext('2d')
+	.putImageData(await pixels('lena.png'))
+```
+
 #### `source`
 
 Type | Meaning
