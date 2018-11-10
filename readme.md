@@ -23,11 +23,11 @@ var [a, b, c] = await pixels.all([
 
 ## API
 
-### `{data, width, height} = await pixels(source, options?)`
+### `let {data, width, height} = await pixels(source, options?)`
 
-Loads pixel data from a `source` based on options. Possibly provide a callback for old-style async calls. Function returns a promise that gets resolved once the source is ready, therefore it is predisposed for await call.
+Loads pixel data from a `source` based on options. Possibly provide a callback for old-style async calls. Function returns a promise that gets resolved once the source is ready, so that is handy for await call.
 
-In browser result is `ImageData` object to easily output to context:
+In browser the result is `ImageData` object to easily output to context:
 
 ```js
 document.body.appendChild(document.createElement('canvas'))
@@ -70,13 +70,14 @@ Option | Meaning
 <!-- `time` | A frame # to read for animated image formats. -->
 <!-- `worker` | Delegate computation to worker, if available. Does not block main thread. -->
 
-### `list|dict = await pixels.all(list|dict, options?)`
+### `let list|dict = await pixels.all(list|dict, options?)`
 
 Load multiple sources or dict of sources in parallel. `options` can provide common for every source options.
 
 ```js
 // load font atlas sprite dict
-var atlas = require('font-atlas')(chars: 'abc', step: [10, 10], shape: [20, 20])
+var atlas = require('font-atlas')({chars: 'abc', step: [10, 10], shape: [20, 20]})
+
 var dict = await pixels({
 	a: {clip: [0,0,10,10]},
 	b: {clip: [10,0,10,10]},
