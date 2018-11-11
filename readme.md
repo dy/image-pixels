@@ -96,6 +96,7 @@ var dict = await pixels({
 * [ndarray-from-image](https://github.com/thibauts/ndarray-from-image) − get-pixels with dtype.
 * [get-image-pixels](https://ghub.io/get-image-pixels) − get pixel data for Canvas/Image/Video elements, browser-only.
 * [get-image-data](https://ghub.io/get-image-data) − get image data for Canvas/Image/Video elements, browser-only.
+* [readimage](https://ghub.io/readimage) − read pixels data into an array in sync fashion in node.
 
 ## License
 

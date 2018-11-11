@@ -14,6 +14,7 @@ var loadUrl = require('./lib/url')
 var loadRaw = require('./lib/raw')
 var loadGl = require('./lib/gl')
 var cache = require('./lib/cache')
+var isFloat = require('is-float-array')
 
 
 module.exports = function (src, o, cb) {
@@ -221,15 +222,6 @@ function getPixels(src, o) {
 	return Promise.resolve(src).then(function (src) {
 		if (cached = checkCached(src, clip)) return cached
 
-		// float data → uint data
-		if ((src instanceof Float32Array) || (src instanceof Float64Array)) {
-			var buf = new Uint8Array(src.length)
-			for (var i = 0; i < src.length; i++) {
-				buf[i] = src[i] * 255
-			}
-			src = buf
-		}
-
 		// array of arrays
 		if (Array.isArray(src)) {
 			// [r,g,b,a,r,g,b,a,...]
@@ -238,6 +230,15 @@ function getPixels(src, o) {
 			// [[r,g,b,a,r,g,b,a], [r,g,b,a,r,g,b,a]]
 			src = new Uint8Array(flat(src))
 		}
+		// float data → uint data
+		else if (isFloat(src)) {
+			var buf = new Uint8Array(src.length)
+			for (var i = 0; i < src.length; i++) {
+				buf[i] = src[i] * 255
+			}
+			src = buf
+		}
+
 
 		// retrieve canvas from contexts
 		var ctx = (src.readPixels || src.getImageData) ? src : src._gl || src.gl || src.context || src.ctx || (src.getContext && (src.getContext('2d') || src.getContext('webgl')))
