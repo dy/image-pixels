@@ -23,7 +23,7 @@ var [a, b, c] = await pixels.all([
 
 ## API
 
-### `let {data, width, height} = await pixels(source, options?)`
+### `let {data, width, height} = await pixels(source, options?, cb?)`
 
 Loads pixel data from a `source` based on options. Possibly provide a callback for old-style async calls. Function returns a promise that gets resolved once the source is ready, so that is handy for await call.
 

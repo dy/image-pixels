@@ -24,16 +24,13 @@ module.exports = function (src, o, cb) {
 	}
 
 	return getPixels(src, o).then(function (data) {
-		// convert result to imagedata
-		var idata = toImageData(data)
-
 		// cache self pixel data
-		if (!cache.get(idata)) {
-			cache.set(idata, idata)
+		if (!cache.get(data)) {
+			cache.set(data, data)
 		}
 
-		if (cb) cb(null, idata)
-		return idata
+		if (cb) cb(null, data)
+		return data
 	}, function (err) {
 		if (cb) cb(err)
 		throw err
@@ -93,18 +90,15 @@ function getPixels(src, o) {
 	if (typeof o === 'string') o = {type: o}
 	else if (!o) o = {}
 	else if (Array.isArray(o)) o = {shape: o}
-	if (isObj(src) || !src) {
-		o = extend(src || {}, o)
-		src = o.source || o.src || o.raw || o.data || o.pixels
+	else o = extend({}, o)
 
-		// nested source
-		if (isObj(src)) src = src.source || src.src || src.raw || src.data || src.pixels || src
+	var cached
 
-		if (!src) {
-			o.cache = false
-			src = {}
-		}
-	}
+	// cases when the source in options and options are in the source
+	if (isObj(src)) o = extend(src, o)
+	if (o.src || o.source) src = o.src || o.source
+	if (isObj(src) && (src.src || src.source)) src = src.src || src.source
+	if (!src) src = {}
 
 	// turn cache on by default
 	if (o.cache == null) o.cache = true
@@ -114,12 +108,7 @@ function getPixels(src, o) {
 	var clip = o.clip && rect(o.clip) || {x: 0, y: 0}
 	var type = o.type || o.mime
 
-	var cached
-
-	// check if cached instance is available
-	if (cached = checkCached(src, clip)) {
-		return Promise.resolve(cached)
-	}
+	if (cached = checkCached(src, clip)) return cached
 
 	var cacheAs = []
 	captureShape(o)
@@ -143,7 +132,7 @@ function getPixels(src, o) {
 		cacheAs.push(src)
 
 		// convert base64 to datauri
-		if (isBase64(src) && !/^data:/i.test(src)) {
+		if (isBase64(src, {mime: false})) {
 			src = new Uint8Array(s2ab(src))
 
 			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
@@ -151,7 +140,9 @@ function getPixels(src, o) {
 
 		// url, path, datauri
 		return loadUrl(src, clip).then(function (src) {
-			if (cached = checkCached(src, clip)) return cached
+			if (cached = checkCached(src, clip)) {
+				return cached
+			}
 
 			captureShape(src)
 			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
@@ -288,44 +279,22 @@ function getPixels(src, o) {
 }
 
 function checkCached(src, clip) {
-	// get cached instance
-	if (cache.get(src)) {
-		var result = cache.get(src) || cache.get(src.buffer)
+	var result = cache.get(src)
 
+	// get cached instance
+	if (result) {
 		if (clip.x || clip.y ||
 			(clip.width && clip.width !== result.width) ||
 			(clip.height && clip.height !== result.height)
 		) {
-			result = new Uint8Array(clipPixels(result, [result.width, result.height], [clip.x, clip.y, clip.width, clip.height]))
-			result.data = result.subarray()
-			result.width = clip.width
-			result.height = clip.height
+			result = {
+				data: new Uint8Array(clipPixels(result.data, [result.width, result.height], [clip.x, clip.y, clip.width, clip.height])),
+				width: clip.width,
+				height: clip.height
+			}
 		}
 
 		return Promise.resolve(result)
 	}
 }
 
-
-var canvas, context
-var idataCache = new WeakMap
-function toImageData (data) {
-	if (!isBrowser) return data
-
-	if (!context) {
-		canvas = document.createElement('canvas')
-		context = canvas.getContext('2d')
-	}
-
-	if (idataCache.has(data)) {
-		return idataCache.get(data)
-	}
-
-	var idata = context.createImageData(data.width, data.height)
-	idata.data.set(data.data)
-
-	idataCache.set(data, idata)
-	idataCache.set(idata, idata)
-
-	return idata
-}

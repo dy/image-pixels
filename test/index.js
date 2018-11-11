@@ -44,10 +44,6 @@ async function testSource(t, arg, o, fix=fixture) {
 
   t.equal(data.width, fix.width)
   t.equal(data.height, fix.height)
-  // for (var i = 0; i < fix.data.length; i++) {
-  //   var val = fix.data[i]
-  //   if (fix.data[i] != data.data[i]) console.log(i, fix.data[i], data.data[i])
-  // }
   fix.data ?
   t.equal(match(data.data, fix.data, null, fix.width, fix.height, {threshold: .006}), 0, 'Ok async pixels') :
   t.ok(data.data[0], 'Ok async pixels')
@@ -88,6 +84,7 @@ async function testSource(t, arg, o, fix=fixture) {
   clearTimeout(to)
 
   t.deepEqual(data.data, list[0].data, 'Ok all pixels data')
+
   t.equal(list[0].width, fix.width)
   t.equal(list[0].height, fix.height)
   fix.data ? t.equal(match(list[0].data, fix.data, null, fix.width, fix.height, {threshold: .006}), 0, 'Ok all pixels') :
@@ -511,10 +508,10 @@ t(`multiple sources: list`, async t => {
     fixture.gl
   ], {width: fixture.width, height: fixture.height})
 
-  t.ok(list[0].data instanceof Uint8Array)
-  t.ok(list[1].data instanceof Uint8Array)
-  t.ok(list[2].data instanceof Uint8Array)
-  t.ok(list[3].data instanceof Uint8Array)
+  t.equal(list[0].data.length, 512)
+  t.equal(list[1].data.length, 512)
+  t.equal(list[2].data.length, 512)
+  t.equal(list[3].data.length, 512)
 
   t.equal(match(list[0].data, fixture.data, null, fixture.width, fixture.height, {threshold: .006}), 0, 'Ok data pixels')
   t.equal(match(list[1].data, fixture.data, null, fixture.width, fixture.height, {threshold: .006}), 0, 'Ok data pixels')
