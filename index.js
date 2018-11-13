@@ -12,7 +12,7 @@ var loadUrl = require('./lib/url')
 var loadRaw = require('./lib/raw')
 var loadGl = require('./lib/gl')
 var cache = require('./lib/cache')
-var u8 = require('to-uint8')
+var pxls = require('pxls')
 
 
 module.exports = function (src, o, cb) {
@@ -243,12 +243,7 @@ function getPixels(src, o) {
 		// raw data container
 		captureShape(src)
 
-		// [r,g,b,a,r,g,b,a,...]
-		// [[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]]]
-		// [[r,g,b,a], [r,g,b,a], [r,g,b,a], [r,g,b,a]]
-		// [[r,g,b,a,r,g,b,a], [r,g,b,a,r,g,b,a]]
-		// float data → uint data
-		src = u8(src) || src
+		src = pxls(src) || src
 		cacheAs.push(src)
 
 		return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})

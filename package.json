@@ -10,18 +10,13 @@
     "./lib/url": "./lib/url-browser.js",
     "./lib/raw": "./lib/raw-browser.js"
   },
-  "browserify": {
-    "transform": [
-      "brfs"
-    ]
-  },
   "dependencies": {
     "arr-flatten": "^1.1.0",
     "arraybuffer-to-string": "^1.0.2",
     "bmp-js": "^0.1.0",
-    "brfs": "^2.0.1",
     "buffer-to-arraybuffer": "0.0.5",
     "buffer-to-uint8array": "^1.1.0",
+    "caller-path": "^2.0.0",
     "clip-pixels": "^1.0.1",
     "flip-pixels": "^1.0.1",
     "image-decode": "^1.1.0",
@@ -33,20 +28,24 @@
     "is-float-array": "^1.0.0",
     "is-plain-obj": "^1.1.0",
     "is-promise": "^2.1.0",
+    "is-relative": "^1.0.0",
     "is-url": "^1.2.4",
     "jpeg-js": "^0.3.4",
     "object-assign": "^4.1.1",
     "omggif": "^1.0.9",
     "parse-rect": "^1.2.0",
+    "path-exists": "^3.0.0",
     "pngjs": "^3.3.3",
     "primitive-pool": "^1.1.0",
+    "pxls": "^2.1.0",
     "request": "^2.88.0",
     "string-to-arraybuffer": "^1.0.2",
-    "to-array-buffer": "^2.1.0",
-    "to-uint8": "^1.3.0",
+    "to-array-buffer": "^3.1.1",
+    "to-uint8": "^1.4.0",
     "weak-map": "^1.0.5"
   },
   "devDependencies": {
+    "brfs": "^2.0.1",
     "del": "^3.0.0",
     "get-pixels": "^3.3.2",
     "gl": "^4.1.1",
@@ -54,13 +53,13 @@
     "jsdom": "^12.2.0",
     "pixelmatch": "^4.0.2",
     "regl": "^1.3.7",
-    "save-file": "^1.2.1",
+    "save-file": "^1.2.4",
     "tape": "^4.9.1",
     "temp-dir": "^1.0.0"
   },
   "scripts": {
     "test": "node test",
-    "test-browser": "budo test"
+    "test-browser": "budo test -- -t brfs"
   },
   "repository": {
     "type": "git",

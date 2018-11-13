@@ -13,10 +13,11 @@ var getNdPixels = require('get-pixels')
 var isOnline = require('is-online')
 var isBrowser = require('is-browser')
 var save = require('save-file')
-var tmp = require('temp-dir')
-var path = require('path')
-var del = require('del')
 
+if (!isBrowser) {
+  var path = require('path')
+  var del = require('del')
+}
 
 if (!isBrowser) {
   // var { JSDOM } = require('jsdom')
@@ -609,33 +610,33 @@ t('changed URL contents', async t => {
   // cached
   await save(
     s2ab(data1),
-    path.join(tmp, 'a.png')
+    './a.png'
   )
-  var result1 = await getPixels(path.join(tmp, 'a.png'))
+  var result1 = await getPixels('./a.png')
   t.deepEqual(result1.data, fixture.data)
   await save(
     s2ab(data2),
-    path.join(tmp, 'a.png')
+    './a.png'
   )
-  var result2 = await getPixels(path.join(tmp, 'a.png'))
+  var result2 = await getPixels('./a.png')
   t.deepEqual(result2.data, result1.data)
 
   // uncached
   await save(
     s2ab(data1),
-    path.join(tmp, 'b.png')
+    './b.png'
   )
-  var result1 = await getPixels(path.join(tmp, 'b.png'), {cache: false})
+  var result1 = await getPixels('./b.png', {cache: false})
   t.deepEqual(result1.data, fixture.data)
   await save(
     s2ab(data2),
-    path.join(tmp, 'b.png')
+    './b.png'
   )
-  var result2 = await getPixels(path.join(tmp, 'b.png'))
+  var result2 = await getPixels('./b.png')
   t.notDeepEqual(result2.data, result1.data)
 
 
-  del([path.join(tmp, 'b.png'), path.join(tmp, 'a.png')])
+  del(['./test/b.png', './test/a.png'])
 
   t.end()
 })
@@ -696,6 +697,7 @@ t.skip('object with float data array', async t => {
   t.end()
 })
 t('do not cache arrays', async t => {
+  // FIXME: it does not cache array, but transparently returns input value, unless indicater otherwise. Should that return copy instead?
   var data = fixture.data.slice()
   var result1 = await getPixels({data, w: fixture.width, h: fixture.height})
   data[10] = 255
