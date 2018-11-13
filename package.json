@@ -1,6 +1,6 @@
 {
   "name": "image-pixels",
-  "version": "2.0.4",
+  "version": "2.1.0",
   "description": "Read pixel data from any image source",
   "main": "index.js",
   "directories": {
