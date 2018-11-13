@@ -59,7 +59,7 @@
     "temp-dir": "^1.0.0"
   },
   "scripts": {
-    "test": "tape test",
+    "test": "node test",
     "test-browser": "budo test"
   },
   "repository": {

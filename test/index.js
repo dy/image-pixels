@@ -12,6 +12,11 @@ var x = require('object-assign')
 var getNdPixels = require('get-pixels')
 var isOnline = require('is-online')
 var isBrowser = require('is-browser')
+var save = require('save-file')
+var tmp = require('temp-dir')
+var path = require('path')
+var del = require('del')
+
 
 if (!isBrowser) {
   // var { JSDOM } = require('jsdom')
@@ -31,7 +36,6 @@ var pngFixURL = fixture.pngURL
 
 const ASSERT_N = 19
 const REQUEST_TIMEOUT = 3000
-
 
 
 
@@ -96,7 +100,6 @@ async function testSource(t, arg, o, fix=fixture) {
   t.equal(match(list[1].data, clipFix.data, null, 2, 2, {threshold: .006}), 0, 'Ok clip pixels') :
   t.ok(list[1].data[0], 'Ok all clip pixels')
 }
-
 async function online () {
   if (isOnline.call) {
     isOnline = await isOnline()
@@ -108,10 +111,7 @@ async function online () {
 
 
 
-
-
 // strings
-
 t('absolute path', async t => {
   t.plan(ASSERT_N)
   await testSource(t, path.resolve('./test/test_pattern.png'))
@@ -167,6 +167,7 @@ t('raw pixels base64', async t => {
   await testSource(t, ab2s(fixture.data, 'base64'), {w:16, h:8})
   t.end()
 })
+
 // DOMs
 t(`<img>`, async t => {
   //TODO: add node test
@@ -478,7 +479,6 @@ t('[[[r,g,b,a], [r,g,b,a]], [[r,g,b,a], [r,g,b,a]], ...]', async t => {
   t.end()
 })
 
-
 // cases
 t(`options directly`, async t => {
   t.plan(ASSERT_N)
@@ -493,8 +493,6 @@ t(`ndarray`, async t => {
     t.end()
   })
 })
-
-
 t(`multiple sources: list`, async t => {
   if (!(await online())) return t.end()
   t.plan(8)
@@ -605,11 +603,6 @@ t.skip('#img-el', async t => {
 t('changed URL contents', async t => {
   if (isBrowser) return t.end()
 
-  var save = require('save-file')
-  var tmp = require('temp-dir')
-  var path = require('path')
-  var del = require('del')
-
   var data1 = fixture.pngDataURL
   var data2 = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAICAYAAADwdn+XAAAAMklEQVQoU2P8z8DwnwEEQCQjnAcWIgYwMvwHaQUTZAFGBob///+TqxvsaIq0jxoAijYA90Mg6YIzCEUAAAAASUVORK5CYII=`
 
@@ -649,7 +642,7 @@ t('changed URL contents', async t => {
 t.skip('URL timeout')
 t.skip('bad URL data')
 t.skip('malformed encoded buffer')
-t.skip(`File, Blob encoded data`, async t => {
+t.skip(`File, Blob with encoded data`, async t => {
   t.plan(ASSERT_N * 2)
 
   await testSource(t, new File([fixture.data], 'file.png'))
@@ -657,6 +650,7 @@ t.skip(`File, Blob encoded data`, async t => {
 
   t.end()
 })
+t.skip('Stream')
 t.skip('SourceBuffer')
 t.skip('SourceBufferList')
 t.skip(`MediaSource`, async t => {
@@ -701,7 +695,6 @@ t.skip('object with float data array', async t => {
 
   t.end()
 })
-
 t('do not cache arrays', async t => {
   var data = fixture.data.slice()
   var result1 = await getPixels({data, w: fixture.width, h: fixture.height})
@@ -719,7 +712,11 @@ t('error during processing', t => {
     t.end()
   })
 })
-
+t('tagged template', async t => {
+  let {data} = await getPixels`./test/test_pattern.png`
+  t.ok(data.length)
+  t.end()
+})
 
 // get-pixels cases
 function test_image (t, pixels) {
@@ -736,7 +733,6 @@ t('get-pixels', async function(t) {
     t.end()
   })
 })
-
 t('get-pixels-png', async function(t) {
   getPixels('test/test_pattern.png', function(err, pixels) {
     if(err) {
@@ -748,7 +744,6 @@ t('get-pixels-png', async function(t) {
     t.end()
   })
 })
-
 t.skip('get-pixels-ppm', async function(t) {
   getPixels(path.join(__dirname, 'test_pattern.ppm'), function(err, pixels) {
     if(err) {
@@ -760,7 +755,6 @@ t.skip('get-pixels-ppm', async function(t) {
     t.end()
   })
 })
-
 t('get-pixels-gif', async function(t) {
   getPixels('test/test_pattern.gif', function(err, pixels) {
     if(err) {
@@ -772,7 +766,6 @@ t('get-pixels-gif', async function(t) {
     t.end()
   })
 })
-
 t('get-pixels-bmp', async function(t) {
   getPixels('test/test_pattern.bmp', function(err, pixels) {
     if(err) {
@@ -784,7 +777,6 @@ t('get-pixels-bmp', async function(t) {
     t.end()
   })
 })
-
 t('data url', async function(t) {
   var url = 'data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7'
   getPixels(url, function(err, data) {
@@ -797,7 +789,6 @@ t('data url', async function(t) {
     t.end()
   })
 })
-
 t('get-pixels-buffer', async function(t) {
   var buffer = fs.readFileSync(__dirname + '/test_pattern.png')
   getPixels(buffer, 'image/png', function(err, pixels) {
@@ -810,7 +801,6 @@ t('get-pixels-buffer', async function(t) {
     t.end()
   })
 })
-
 t('get-url png img', async function(t) {
   if (!(await online())) return t.end()
 
@@ -824,8 +814,7 @@ t('get-url png img', async function(t) {
     test_image(t, pixels);
     t.end();
   });
-});
-
+})
 t('get-url gif img', async function(t) {
   if (!(await online())) return t.end()
 
@@ -839,4 +828,4 @@ t('get-url gif img', async function(t) {
     test_image(t, pixels);
     t.end();
   });
-});
+})

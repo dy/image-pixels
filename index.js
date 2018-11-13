@@ -16,6 +16,9 @@ var u8 = require('to-uint8')
 
 
 module.exports = function (src, o, cb) {
+	// tagged template
+	if (Array.isArray(src) && src.raw) src = String.raw.apply(this, arguments)
+
 	// detect callback arg
 	if (typeof o === 'function') {
 		cb = o
