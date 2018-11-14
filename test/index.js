@@ -5,7 +5,7 @@ var fs = require('fs')
 var path = require('path')
 var getPixels = require('../')
 var match = require('pixelmatch')
-var s2ab = require('string-to-arraybuffer')
+var toab = require('to-array-buffer')
 var fixture = require('./fixture')
 var ab2s = require('arraybuffer-to-string')
 var x = require('object-assign')
@@ -32,7 +32,7 @@ var clipFix = {
   width: 2,
   height: 2
 }
-var pngFixData = s2ab(fixture.pngDataURL)
+var pngFixData = toab(fixture.pngDataURL)
 var pngFixURL = fixture.pngURL
 
 const ASSERT_N = 19
@@ -609,13 +609,13 @@ t('changed URL contents', async t => {
 
   // cached
   await save(
-    s2ab(data1),
+    toab(data1),
     './a.png'
   )
   var result1 = await getPixels('./a.png')
   t.deepEqual(result1.data, fixture.data)
   await save(
-    s2ab(data2),
+    toab(data2),
     './a.png'
   )
   var result2 = await getPixels('./a.png')
@@ -623,20 +623,20 @@ t('changed URL contents', async t => {
 
   // uncached
   await save(
-    s2ab(data1),
+    toab(data1),
     './b.png'
   )
   var result1 = await getPixels('./b.png', {cache: false})
   t.deepEqual(result1.data, fixture.data)
   await save(
-    s2ab(data2),
+    toab(data2),
     './b.png'
   )
   var result2 = await getPixels('./b.png')
   t.notDeepEqual(result2.data, result1.data)
 
 
-  del(['./test/b.png', './test/a.png'])
+  del(['./b.png', './a.png'])
 
   t.end()
 })

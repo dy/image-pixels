@@ -2,7 +2,6 @@
 
 var isObj = require('is-plain-obj')
 var isBase64 = require('is-base64')
-var s2ab = require('string-to-arraybuffer')
 var rect = require('parse-rect')
 var extend = require('object-assign')
 var isBlob = require('is-blob')
@@ -13,7 +12,6 @@ var loadRaw = require('./lib/raw')
 var loadGl = require('./lib/gl')
 var cache = require('./lib/cache')
 var pxls = require('pxls')
-
 
 module.exports = function (src, o, cb) {
 	// tagged template
@@ -135,7 +133,7 @@ function getPixels(src, o) {
 
 		// convert base64 to datauri
 		if (isBase64(src, {mime: false})) {
-			src = new Uint8Array(s2ab(src))
+			src = pxls(src)
 
 			return loadRaw(src, {type: type, cache: o.cache && cacheAs, shape: [width, height], clip: clip})
 		}
