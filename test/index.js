@@ -287,15 +287,25 @@ t(`Canvas/Context2D`, async t => {
 })
 t(`Canvas/WebGLContext`, async t => {
   if (isBrowser) {
-    t.plan(ASSERT_N * 3)
+    t.plan(ASSERT_N * 4)
     await testSource(t, fixture.gl)
     await testSource(t, fixture.canvasGl)
   }
   else {
-    t.plan(ASSERT_N * 2)
+    t.plan(ASSERT_N * 3)
     await testSource(t, fixture.gl)
   }
   await testSource(t, fixture.regl)
+
+  let c = fixture.gl.canvas
+  Object.defineProperty(fixture.gl, 'canvas', {
+    writable: true,
+    configurable: true,
+    value: null
+  })
+  fixture.gl.canvas = null
+  await testSource(t, fixture.gl)
+  fixture.gl.canvas = c
 
   t.end()
 })
