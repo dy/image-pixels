@@ -39,7 +39,7 @@ document.body.appendChild(document.createElement('canvas'))
 
 Type | Meaning
 ---|---
-`url`, `path` | Relative/absolute path in node resolves to a file.
+`url`, `path` | Relative/absolute path.
 `data-uri`, `base64` | String with encoded or raw pixel data. Raw data requires `options.shape`. Encoded data may require `options.type` to skip mime type detection.
 `HTMLImageElement`, `SVGImageElement`, `HTMLVideoElement`, `CSSImageValue` | DOM/SVG image elements.
 `Image`, `ImageData`, `ImageBitmap` | Browser image data containers.
@@ -50,25 +50,17 @@ Type | Meaning
 `Float32Array`, `Float64Array`, `Array`, `Array` of arrays | Float pixel data with values from `0..1` range.
 `Promise` | Promise expecting resolution to an image source.
 `ndarray` | [Ndarray](https://ghub.io/ndarray) container with pixel data, compatible with [get-pixels](https://ghub.io/get-pixels).
-`FileList` | [TODO]
-`MediaSource` | [TODO]
-`OffscreenCanvas` | [TODO]
-`Bitmaprenderer` | [TODO]
-`SourceBuffer`, `SourceBufferList` | [TODO]
-`Stream` | [TODO]
 options object | If `source` argument is omitted, it is taken from `options.source`, useful for `pixels.all`.
 
 #### `options`
 
 Option | Meaning
 ---|---
-`source` | Source data, one from the list above. Applicable for the case when the `source` argument is skipped or multiple sources are loaded.
-`shape` | Input data shape `[width, height]`, required for raw data. Alternately, `width` or `height` properties may be provided.
-`type`/`mime` | Mime type, optional for raw data.
+`source` | Source data, one from the list above. Applicable for multiple sources.
+`shape` or `width`/`height` | Input raw data shape `[width, height]`.
+`type`/`mime` | Mime type, optional for raw data to skip detection.
 `clip` | Clipping rectangle, `[left, top, right, bottom]` or `{x?, y?, width?, height?}`.
-`cache` | Save source/url for faster subsequent loading.
-<!-- `time` | A frame # to read for animated image formats. -->
-<!-- `worker` | Delegate computation to worker, if available. Does not block main thread. -->
+`cache` | Cache loaded data for the source/url for faster subsequent fetch.
 
 ### `let list|dict = await pixels.all(list|dict, options?)`
 
